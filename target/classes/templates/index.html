@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Dashboard</title>
+    <style>
+        .list-group-item:hover {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%) !important;
+            transform: translateX(10px);
+        }
+        
+        .team-member {
+            transition: all 0.3s;
+            padding: 15px;
+            border-radius: 15px;
+        }
+        
+        .team-member:hover {
+            transform: translateY(-10px);
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .team-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+        
+        .team-member:hover .team-avatar {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        .team-member h6 {
+            color: #2d3748;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .team-member small {
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="row mb-4 g-4">
+        <div class="col-md-3">
+            <div class="card stat-card primary animate__animated animate__fadeInUp">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6>Total Employees</h6>
+                            <h2 id="totalEmployees">
+                                <span class="spinner-border spinner-border-sm"></span>
+                            </h2>
+                            <small style="color: rgba(255,255,255,0.8);">Active workforce</small>
+                        </div>
+                        <i class="bi bi-people-fill stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card success animate__animated animate__fadeInUp" style="animation-delay: 0.1s">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6>Departments</h6>
+                            <h2 id="totalDepartments">
+                                <span class="spinner-border spinner-border-sm"></span>
+                            </h2>
+                            <small style="color: rgba(255,255,255,0.8);">Active departments</small>
+                        </div>
+                        <i class="bi bi-diagram-3-fill stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card info animate__animated animate__fadeInUp" style="animation-delay: 0.2s">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6>Job Positions</h6>
+                            <h2 id="totalJobs">
+                                <span class="spinner-border spinner-border-sm"></span>
+                            </h2>
+                            <small style="color: rgba(255,255,255,0.8);">Available roles</small>
+                        </div>
+                        <i class="bi bi-briefcase-fill stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card warning animate__animated animate__fadeInUp" style="animation-delay: 0.3s">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6>Locations</h6>
+                            <h2 id="totalLocations">
+                                <span class="spinner-border spinner-border-sm"></span>
+                            </h2>
+                            <small style="color: rgba(255,255,255,0.8);">Office locations</small>
+                        </div>
+                        <i class="bi bi-geo-alt-fill stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card animate__animated animate__fadeInUp" style="animation-delay: 0.5s">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people-fill me-2" style="color: #667eea;"></i>
+                        Our Team
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <!-- Kartik - Job History -->
+                        <div class="col-md-4 col-lg-2">
+                            <a href="/job-history" class="text-decoration-none">
+                                <div class="text-center team-member">
+                                    <div class="team-avatar mx-auto mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                        <i class="bi bi-clock-history"></i>
+                                    </div>
+                                    <h6 class="mb-1">Kartik</h6>
+                                    <small class="text-muted">Job History</small>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Nakul - Departments -->
+                        <div class="col-md-4 col-lg-2">
+                            <a href="/departments" class="text-decoration-none">
+                                <div class="text-center team-member">
+                                    <div class="team-avatar mx-auto mb-3" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                        <i class="bi bi-diagram-3-fill"></i>
+                                    </div>
+                                    <h6 class="mb-1">Nakul</h6>
+                                    <small class="text-muted">Departments</small>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Samarpit - Jobs -->
+                        <div class="col-md-4 col-lg-2">
+                            <a href="/jobs" class="text-decoration-none">
+                                <div class="text-center team-member">
+                                    <div class="team-avatar mx-auto mb-3" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                                        <i class="bi bi-briefcase-fill"></i>
+                                    </div>
+                                    <h6 class="mb-1">Samarpit</h6>
+                                    <small class="text-muted">Jobs</small>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Navya - Employees -->
+                        <div class="col-md-4 col-lg-2">
+                            <a href="/employees" class="text-decoration-none">
+                                <div class="text-center team-member">
+                                    <div class="team-avatar mx-auto mb-3" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                        <i class="bi bi-people-fill"></i>
+                                    </div>
+                                    <h6 class="mb-1">Navya</h6>
+                                    <small class="text-muted">Employees</small>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Rupika - Regions & Countries -->
+                        <div class="col-md-4 col-lg-2">
+                            <a href="/regions" class="text-decoration-none">
+                                <div class="text-center team-member">
+                                    <div class="team-avatar mx-auto mb-3" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+                                        <i class="bi bi-globe2"></i>
+                                    </div>
+                                    <h6 class="mb-1">Rupika</h6>
+                                    <small class="text-muted">Regions & Countries</small>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Tanish - Locations -->
+                        <div class="col-md-4 col-lg-2">
+                            <a href="/locations" class="text-decoration-none">
+                                <div class="text-center team-member">
+                                    <div class="team-avatar mx-auto mb-3" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+                                        <i class="bi bi-geo-alt-fill"></i>
+                                    </div>
+                                    <h6 class="mb-1">Tanish</h6>
+                                    <small class="text-muted">Locations</small>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4 mt-1">
+        <div class="col-md-6">
+            <div class="card animate__animated animate__fadeInLeft">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-grid-3x3-gap-fill me-2" style="color: #667eea;"></i>
+                        Organization Management
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="/regions" class="list-group-item list-group-item-action border-0 rounded-3 mb-2" style="transition: all 0.3s;">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle p-3 me-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                    <i class="bi bi-globe2 text-white" style="font-size: 1.5em;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">Manage Regions</h6>
+                                    <small class="text-muted">View and manage geographical regions</small>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted"></i>
+                            </div>
+                        </a>
+                        <a href="/countries" class="list-group-item list-group-item-action border-0 rounded-3 mb-2" style="transition: all 0.3s;">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle p-3 me-3" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                    <i class="bi bi-flag-fill text-white" style="font-size: 1.5em;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">Manage Countries</h6>
+                                    <small class="text-muted">View and manage countries</small>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted"></i>
+                            </div>
+                        </a>
+                        <a href="/locations" class="list-group-item list-group-item-action border-0 rounded-3 mb-2" style="transition: all 0.3s;">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle p-3 me-3" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                                    <i class="bi bi-geo-alt-fill text-white" style="font-size: 1.5em;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">Manage Locations</h6>
+                                    <small class="text-muted">View and manage office locations</small>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted"></i>
+                            </div>
+                        </a>
+                        <a href="/departments" class="list-group-item list-group-item-action border-0 rounded-3" style="transition: all 0.3s;">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle p-3 me-3" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                    <i class="bi bi-diagram-3-fill text-white" style="font-size: 1.5em;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">Manage Departments</h6>
+                                    <small class="text-muted">View and manage departments</small>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card animate__animated animate__fadeInRight">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-badge-fill me-2" style="color: #667eea;"></i>
+                        HR Management
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="/jobs" class="list-group-item list-group-item-action border-0 rounded-3 mb-2" style="transition: all 0.3s;">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle p-3 me-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                    <i class="bi bi-briefcase-fill text-white" style="font-size: 1.5em;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">Job Positions</h6>
+                                    <small class="text-muted">View and manage job roles</small>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted"></i>
+                            </div>
+                        </a>
+                        <a href="/employees" class="list-group-item list-group-item-action border-0 rounded-3 mb-2" style="transition: all 0.3s;">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle p-3 me-3" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                    <i class="bi bi-people-fill text-white" style="font-size: 1.5em;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">Employee Directory</h6>
+                                    <small class="text-muted">View and manage employees</small>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted"></i>
+                            </div>
+                        </a>
+                        <a href="/job-history" class="list-group-item list-group-item-action border-0 rounded-3" style="transition: all 0.3s;">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle p-3 me-3" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                                    <i class="bi bi-clock-history text-white" style="font-size: 1.5em;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">Job History</h6>
+                                    <small class="text-muted">Track employee job changes</small>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card animate__animated animate__fadeInUp" style="animation-delay: 0.4s">
+                <div class="card-body text-center py-4">
+                    <div class="d-flex align-items-center justify-content-center gap-4 flex-wrap">
+                        <div>
+                            <i class="bi bi-check-circle-fill text-success" style="font-size: 2em;"></i>
+                            <p class="mb-0 mt-2"><strong>Backend API:</strong> <span class="badge bg-success">Connected</span></p>
+                        </div>
+                        <div class="vr" style="height: 50px;"></div>
+                        <div>
+                            <i class="bi bi-server text-primary" style="font-size: 2em;"></i>
+                            <p class="mb-0 mt-2"><strong>API Endpoint:</strong> <code class="bg-light px-3 py-2 rounded">http://13.205.138.59:8080/api/v1</code></p>
+                        </div>
+                        <div class="vr" style="height: 50px;"></div>
+                        <div>
+                            <i class="bi bi-code-square text-info" style="font-size: 2em;"></i>
+                            <p class="mb-0 mt-2"><strong>Version:</strong> <span class="badge bg-info">1.0.0</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Page-specific scripts -->
+<th:block layout:fragment="scripts">
+    <script>
+        console.log('Index.html script loaded');
+        
+        async function fetchStats() {
+            console.log('fetchStats() called');
+            try {
+                // Fetch employees count
+                console.log('Fetching employees...');
+                const employeesData = await API.get('/employees?size=1');
+                document.getElementById('totalEmployees').textContent = employeesData.page?.totalElements || 0;
+                
+                // Fetch departments count
+                console.log('Fetching departments...');
+                const deptData = await API.get('/departments?size=1');
+                document.getElementById('totalDepartments').textContent = deptData.page?.totalElements || 0;
+                
+                // Fetch jobs count
+                console.log('Fetching jobs...');
+                const jobsData = await API.get('/jobs?size=1');
+                document.getElementById('totalJobs').textContent = jobsData.page?.totalElements || 0;
+                
+                // Fetch locations count
+                console.log('Fetching locations...');
+                const locData = await API.get('/locations?size=1');
+                document.getElementById('totalLocations').textContent = locData.page?.totalElements || 0;
+                
+                console.log('All stats fetched successfully');
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+                document.getElementById('totalEmployees').textContent = 'N/A';
+                document.getElementById('totalDepartments').textContent = 'N/A';
+                document.getElementById('totalJobs').textContent = 'N/A';
+                document.getElementById('totalLocations').textContent = 'N/A';
+            }
+        }
+        
+        // Wait for DOM and API to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('DOM loaded, calling fetchStats');
+                setTimeout(fetchStats, 100);
+            });
+        } else {
+            console.log('DOM already loaded, calling fetchStats');
+            setTimeout(fetchStats, 100);
+        }
+    </script>
+</th:block>
+
+</body>
+</html>

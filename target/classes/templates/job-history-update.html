@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Update Job History</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="row mb-3">
+        <div class="col">
+            <a href="/job-history" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Job History
+            </a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h5 class="mb-0">
+                <i class="bi bi-pencil-square me-2"></i>
+                Update Employee Job History
+            </h5>
+        </div>
+        <div class="card-body">
+            <!-- Employee Search Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-search me-2"></i>Search Employee</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="employeeSearch" class="form-label fw-bold">Search by Name or ID</label>
+                            <input type="text" class="form-control form-control-lg" id="employeeSearch" 
+                                   placeholder="Type employee name or ID..." autocomplete="off">
+                            <div id="searchResults" class="list-group mt-2" style="display: none; max-height: 300px; overflow-y: auto;"></div>
+                            <div class="form-text">Start typing to search for an employee</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Selected Employee Info -->
+            <div id="selectedEmployeeSection" style="display: none;">
+                <div class="alert alert-info mb-4">
+                    <h6 class="mb-3"><i class="bi bi-person-check-fill me-2"></i>Selected Employee</h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <p><strong>Employee ID:</strong> <span id="selectedEmpId" class="text-primary">-</span></p>
+                        </div>
+                        <div class="col-md-3">
+                            <p><strong>Name:</strong> <span id="selectedEmpName">-</span></p>
+                        </div>
+                        <div class="col-md-3">
+                            <p><strong>Current Job:</strong> <span id="selectedEmpJob">-</span></p>
+                        </div>
+                        <div class="col-md-3">
+                            <p><strong>Current Department:</strong> <span id="selectedEmpDept">-</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Update Form -->
+                <form id="updateJobForm">
+                    <h6 class="mb-3"><i class="bi bi-briefcase-fill me-2"></i>New Job Assignment</h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="newJobId" class="form-label fw-bold">New Job *</label>
+                            <select class="form-select" id="newJobId" required>
+                                <option value="">Select a job...</option>
+                            </select>
+                            <div class="form-text">Select the new job role</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="newDepartmentId" class="form-label fw-bold">New Department *</label>
+                            <select class="form-select" id="newDepartmentId" required>
+                                <option value="">Select a department...</option>
+                            </select>
+                            <div class="form-text">Select the new department</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="newSalary" class="form-label fw-bold">New Salary *</label>
+                            <input type="number" class="form-control" id="newSalary" placeholder="Enter new salary" 
+                                   step="0.01" min="0" required>
+                            <div class="form-text">Annual salary in USD</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="startDate" class="form-label fw-bold">Start Date *</label>
+                            <input type="date" class="form-control" id="startDate" required>
+                            <div class="form-text">When does this job assignment start?</div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Note:</strong> This will end the current job assignment and create a new job history record.
+                    </div>
+                    
+                    <div class="d-flex gap-3 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg" id="saveBtn">
+                            <i class="bi bi-check-circle me-2"></i>Update Job History
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-lg" onclick="history.back()">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div id="errorMessage" class="alert alert-danger animate__animated animate__shakeX" style="display: none;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span id="errorText"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Page-specific scripts -->
+<th:block layout:fragment="scripts">
+<script>
+    let selectedEmployeeId = null;
+    let allEmployees = [];
+    let searchTimeout = null;
+    
+    // Check if employeeId is in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const employeeIdFromUrl = urlParams.get('employeeId');
+    
+    async function init() {
+        // Load all employees for search
+        await loadAllEmployees();
+        
+        // Load jobs and departments
+        await Promise.all([
+            loadJobs(),
+            loadDepartments()
+        ]);
+        
+        // If employee ID in URL, select that employee
+        if (employeeIdFromUrl) {
+            const employee = allEmployees.find(emp => emp.employeeId == employeeIdFromUrl);
+            if (employee) {
+                selectEmployee(employee);
+            }
+        }
+        
+        // Set default start date to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('startDate').value = tomorrow.toISOString().split('T')[0];
+    }
+    
+    async function loadAllEmployees() {
+        try {
+            const data = await API.get('/employees?size=1000');
+            allEmployees = data._embedded?.employeeses || data._embedded?.employees || [];
+            console.log(`Loaded ${allEmployees.length} employees`);
+        } catch (error) {
+            console.error('Error loading employees:', error);
+        }
+    }
+    
+    async function loadJobs() {
+        try {
+            const data = await API.get('/jobs?size=100');
+            const jobs = data._embedded?.jobses || data._embedded?.jobs || [];
+            
+            const select = document.getElementById('newJobId');
+            select.innerHTML = '<option value="">Select a job...</option>';
+            
+            jobs.forEach(job => {
+                const option = document.createElement('option');
+                option.value = job.jobId;
+                option.textContent = job.jobTitle;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading jobs:', error);
+        }
+    }
+    
+    async function loadDepartments() {
+        try {
+            const data = await API.get('/departments?size=100');
+            const departments = data._embedded?.departmentses || data._embedded?.departments || [];
+            
+            const select = document.getElementById('newDepartmentId');
+            select.innerHTML = '<option value="">Select a department...</option>';
+            
+            departments.forEach(dept => {
+                const option = document.createElement('option');
+                option.value = dept.departmentId;
+                option.textContent = dept.departmentName;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading departments:', error);
+        }
+    }
+    
+    // Employee search with autocomplete
+    document.getElementById('employeeSearch').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.trim().toLowerCase();
+        
+        // Clear previous timeout
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        
+        if (searchTerm.length < 1) {
+            document.getElementById('searchResults').style.display = 'none';
+            return;
+        }
+        
+        // Debounce search
+        searchTimeout = setTimeout(() => {
+            performSearch(searchTerm);
+        }, 300);
+    });
+    
+    function performSearch(searchTerm) {
+        const results = allEmployees.filter(emp => {
+            const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.toLowerCase();
+            const empId = emp.employeeId.toString();
+            return fullName.includes(searchTerm) || empId.includes(searchTerm);
+        }).slice(0, 10); // Limit to 10 results
+        
+        displaySearchResults(results);
+    }
+    
+    function displaySearchResults(results) {
+        const resultsDiv = document.getElementById('searchResults');
+        
+        if (results.length === 0) {
+            resultsDiv.innerHTML = '<div class="list-group-item">No employees found</div>';
+            resultsDiv.style.display = 'block';
+            return;
+        }
+        
+        resultsDiv.innerHTML = '';
+        results.forEach(emp => {
+            const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+            const item = document.createElement('a');
+            item.href = '#';
+            item.className = 'list-group-item list-group-item-action';
+            item.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${fullName}</strong>
+                        <br>
+                        <small class="text-muted">ID: ${emp.employeeId} | Email: ${emp.email || 'N/A'}</small>
+                    </div>
+                    <span class="badge bg-primary">${emp.employeeId}</span>
+                </div>
+            `;
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                selectEmployee(emp);
+                document.getElementById('employeeSearch').value = fullName;
+                resultsDiv.style.display = 'none';
+            });
+            resultsDiv.appendChild(item);
+        });
+        
+        resultsDiv.style.display = 'block';
+    }
+    
+    async function selectEmployee(employee) {
+        selectedEmployeeId = employee.employeeId;
+        
+        // Load full employee details
+        try {
+            const empData = await API.get(`/employees/${employee.employeeId}`);
+            
+            const fullName = `${empData.firstName || ''} ${empData.lastName || ''}`.trim();
+            document.getElementById('selectedEmpId').textContent = empData.employeeId;
+            document.getElementById('selectedEmpName').textContent = fullName;
+            document.getElementById('selectedEmpJob').textContent = empData.job?.jobTitle || 'N/A';
+            document.getElementById('selectedEmpDept').textContent = empData.department?.departmentName || 'N/A';
+            
+            // Pre-fill form with current values
+            if (empData.job?.jobId) {
+                document.getElementById('newJobId').value = empData.job.jobId;
+            }
+            if (empData.department?.departmentId) {
+                document.getElementById('newDepartmentId').value = empData.department.departmentId;
+            }
+            if (empData.salary) {
+                document.getElementById('newSalary').value = empData.salary;
+            }
+            
+            document.getElementById('selectedEmployeeSection').style.display = 'block';
+        } catch (error) {
+            console.error('Error loading employee details:', error);
+            showError('Failed to load employee details: ' + error.message);
+        }
+    }
+    
+    // Handle form submission
+    document.getElementById('updateJobForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (!selectedEmployeeId) {
+            alert('Please select an employee first');
+            return;
+        }
+        
+        const newJobId = document.getElementById('newJobId').value;
+        const newDepartmentId = document.getElementById('newDepartmentId').value;
+        const newSalary = document.getElementById('newSalary').value;
+        const startDate = document.getElementById('startDate').value;
+        
+        if (!newJobId || !newDepartmentId || !newSalary || !startDate) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        const saveBtn = document.getElementById('saveBtn');
+        const originalBtnText = saveBtn.innerHTML;
+        
+        try {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
+            
+            const requestBody = {
+                employeeId: parseInt(selectedEmployeeId),
+                startDate: startDate
+            };
+            
+            // Add optional fields only if they have values
+            if (newJobId) {
+                requestBody.jobId = newJobId;
+            }
+            if (newDepartmentId) {
+                requestBody.departmentId = parseInt(newDepartmentId);
+            }
+            if (newSalary) {
+                // Send salary as a number (will be converted to BigDecimal by Jackson)
+                requestBody.salary = Number(newSalary);
+            }
+            // endDate is null for current job
+            requestBody.endDate = null;
+            
+            console.log('Sending request:', requestBody);
+            
+            // Call the job history update endpoint (not employee PATCH)
+            const response = await fetch(`/api/proxy?endpoint=${encodeURIComponent(`/api/v1/job-history/update`)}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+            
+            const result = await response.json();
+            
+            console.log('Response:', result);
+            
+            // Check if the response indicates an error
+            if (!response.ok || result.success === false || result.error) {
+                const errorMessage = result.message || result.error || JSON.stringify(result) || 'Failed to update job history';
+                throw new Error(errorMessage);
+            }
+            
+            // Check if result has success field
+            if (result.success === false) {
+                throw new Error(result.message || 'Failed to update job history');
+            }
+            
+            // Success
+            alert('✅ Job history updated successfully!\n\n' + (result.message || 'Changes have been saved.'));
+            window.location.href = `/employee-details?employeeId=${selectedEmployeeId}`;
+            
+        } catch (error) {
+            console.error('Error updating job history:', error);
+            showError('Failed to update job history: ' + error.message);
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalBtnText;
+        }
+    });
+    
+    function showError(message) {
+        const errorDiv = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        
+        errorDiv.style.display = 'block';
+        errorText.textContent = message;
+        
+        // Scroll to error message
+        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Auto-hide after 10 seconds
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 10000);
+    }
+    
+    // Initialize on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+</script>
+</th:block>
+
+</body>
+</html>

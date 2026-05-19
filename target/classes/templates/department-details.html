@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Department Details</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <!-- Header with Smart Back Button -->
+    <div class="row mb-4">
+        <div class="col">
+            <button id="backButton" class="btn btn-outline-primary" onclick="goBack()">
+                <i class="bi bi-arrow-left me-2"></i><span id="backButtonText">Back to Departments</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Card -->
+    <div class="card shadow-sm">
+        <div class="card-header" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-building me-2"></i>
+                    Department Details - ID #<span id="deptIdDisplay">...</span>
+                </h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 text-muted fw-bold">Loading department details...</p>
+            </div>
+            
+            <!-- Details Content -->
+            <div id="detailsContent" style="display: none;">
+                <!-- Department Information Card -->
+                <div class="card mb-4" style="border-left: 5px solid #4facfe;">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="bi bi-info-circle-fill me-2" style="color: #4facfe;"></i>
+                            Department Information
+                        </h5>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label class="text-muted small mb-1">Department ID</label>
+                                <p class="fw-bold mb-0 fs-5"><span id="deptId" class="text-primary">-</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small mb-1">Department Name</label>
+                                <p class="fw-bold mb-0 fs-5" id="deptName">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Employees Section -->
+                <div class="card" style="border-left: 5px solid #4facfe;">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="bi bi-people-fill me-2" style="color: #4facfe;"></i>
+                            Employees in this Department
+                            <span class="badge bg-primary ms-2" id="employeeCount">0</span>
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="text-center" style="width: 100px;">ID</th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Job Title</th>
+                                        <th class="text-end">Salary</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employeesBody">
+                                    <!-- Employees will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="errorMessage" class="alert alert-danger animate__animated animate__shakeX" style="display: none;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span id="errorText"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Page-specific scripts -->
+<th:block layout:fragment="scripts">
+<script>
+    console.log('Department Details script loaded');
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const departmentId = urlParams.get('departmentId');
+    const returnUrl = urlParams.get('returnUrl');
+    
+    // Smart back button function
+    function goBack() {
+        // Priority 1: Use returnUrl parameter if provided
+        if (returnUrl) {
+            window.location.href = decodeURIComponent(returnUrl);
+            return;
+        }
+        
+        // Priority 2: Check document.referrer and navigate directly
+        const referrer = document.referrer;
+        if (referrer && referrer.includes(window.location.host)) {
+            if (referrer.includes('/locations')) {
+                window.location.href = '/locations';
+                return;
+            } else if (referrer.includes('/regions')) {
+                window.location.href = '/regions';
+                return;
+            } else if (referrer.includes('/departments')) {
+                window.location.href = '/departments';
+                return;
+            }
+        }
+        
+        // Priority 3: Default to departments list
+        window.location.href = '/departments';
+    }
+    
+    // Update back button text based on referrer
+    function updateBackButtonText() {
+        const referrer = document.referrer;
+        const backButtonText = document.getElementById('backButtonText');
+        
+        if (returnUrl) {
+            backButtonText.textContent = 'Back';
+        } else if (referrer && referrer.includes(window.location.host)) {
+            if (referrer.includes('/locations')) {
+                backButtonText.textContent = 'Back to Locations';
+            } else if (referrer.includes('/regions')) {
+                backButtonText.textContent = 'Back to Regions';
+            } else {
+                backButtonText.textContent = 'Back';
+            }
+        } else {
+            backButtonText.textContent = 'Back to Departments';
+        }
+    }
+    
+    async function loadDepartmentDetails() {
+        if (!departmentId) {
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorText').textContent = 'No department ID provided';
+            return;
+        }
+        
+        document.getElementById('deptIdDisplay').textContent = departmentId;
+        updateBackButtonText();
+        
+        try {
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('detailsContent').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // Fetch department details
+            const deptData = await API.get(`/departments/${departmentId}`);
+            
+            console.log('Department data:', deptData);
+            
+            // Department Information
+            document.getElementById('deptId').textContent = deptData.departmentId || '-';
+            document.getElementById('deptName').textContent = deptData.departmentName || '-';
+            
+            // Fetch employees in this department
+            const employeesData = await API.get(`/employees/search/findByDepartmentDepartmentId?departmentId=${departmentId}&size=100`);
+            const employees = employeesData._embedded?.employeeses || employeesData._embedded?.employees || [];
+            
+            document.getElementById('employeeCount').textContent = employees.length;
+            displayEmployees(employees);
+            
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('detailsContent').style.display = 'block';
+            document.getElementById('detailsContent').classList.add('animate__animated', 'animate__fadeIn');
+        } catch (error) {
+            console.error('Error loading details:', error);
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorText').textContent = 'Failed to load department details: ' + error.message;
+        }
+    }
+    
+    function displayEmployees(employees) {
+        const tbody = document.getElementById('employeesBody');
+        tbody.innerHTML = '';
+        
+        if (employees.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+                        <i class="bi bi-inbox" style="font-size: 3em; color: #ccc;"></i>
+                        <p class="text-muted mt-3 mb-0">No employees found in this department</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        employees.forEach((emp, index) => {
+            const row = document.createElement('tr');
+            row.className = 'animate__animated animate__fadeInUp';
+            row.style.animationDelay = `${index * 0.03}s`;
+            
+            const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+            const jobTitle = emp.job?.jobTitle || emp.jobTitle || '-';
+            const salary = emp.salary 
+                ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(emp.salary)
+                : '-';
+            
+            row.innerHTML = `
+                <td class="text-center">
+                    <span class="badge bg-primary rounded-pill">${emp.employeeId}</span>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-circle me-2" style="width: 35px; height: 35px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                            ${fullName.charAt(0).toUpperCase()}
+                        </div>
+                        <strong>${fullName}</strong>
+                    </div>
+                </td>
+                <td><small>${emp.email || '-'}</small></td>
+                <td><span class="badge bg-info text-dark">${jobTitle}</span></td>
+                <td class="text-end fw-bold text-success">${salary}</td>
+                <td class="text-center">
+                    <a href="/employee-details?employeeId=${emp.employeeId}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye me-1"></i>View
+                    </a>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+    
+    // Load details on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(loadDepartmentDetails, 100);
+        });
+    } else {
+        setTimeout(loadDepartmentDetails, 100);
+    }
+</script>
+</th:block>
+
+</body>
+</html>
