@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Change Department Manager</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="row mb-3">
+        <div class="col">
+            <a href="#" onclick="history.back(); return false;" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left me-2"></i>Back
+            </a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+            <h5 class="mb-0">
+                <i class="bi bi-pencil-square me-2"></i>
+                Change Department Manager
+            </h5>
+        </div>
+        <div class="card-body">
+            <div id="loadingSpinner" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 text-muted fw-bold">Loading department details...</p>
+            </div>
+            
+            <div id="formContent" style="display: none;">
+                <!-- Current Department Info -->
+                <div class="alert alert-info mb-4">
+                    <h6 class="mb-3"><i class="bi bi-info-circle-fill me-2"></i>Current Department Information</h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p><strong>Department ID:</strong> <span id="deptId" class="text-primary">-</span></p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Department Name:</strong> <span id="deptName">-</span></p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Current Manager:</strong> <span id="currentManager">-</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Change Manager Form -->
+                <form id="changeManagerForm">
+                    <div class="mb-4">
+                        <label for="managerSelect" class="form-label fw-bold">
+                            <i class="bi bi-person-fill me-2"></i>Select New Manager
+                        </label>
+                        <select id="managerSelect" class="form-select form-select-lg" required>
+                            <option value="">Choose an employee...</option>
+                        </select>
+                        <div class="form-text">Select an employee to assign as the new manager for this department</div>
+                    </div>
+                    
+                    <div id="selectedManagerInfo" class="alert alert-success" style="display: none;">
+                        <h6 class="mb-2"><i class="bi bi-check-circle-fill me-2"></i>Selected Manager</h6>
+                        <p class="mb-1"><strong>Name:</strong> <span id="selectedManagerName"></span></p>
+                        <p class="mb-0"><strong>Employee ID:</strong> <span id="selectedManagerId"></span></p>
+                    </div>
+                    
+                    <div class="d-flex gap-3 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg" id="saveBtn">
+                            <i class="bi bi-check-circle me-2"></i>Save Changes
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-lg" onclick="history.back()">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div id="errorMessage" class="alert alert-danger animate__animated animate__shakeX" style="display: none;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span id="errorText"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Page-specific scripts -->
+<th:block layout:fragment="scripts">
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const departmentId = urlParams.get('departmentId');
+    let currentDepartment = null;
+    
+    async function loadData() {
+        if (!departmentId) {
+            showError('No department ID provided');
+            return;
+        }
+        
+        try {
+            // Load department details
+            const deptData = await API.get(`/departments/${departmentId}`);
+            currentDepartment = deptData;
+            
+            if (deptData.error) {
+                throw new Error(deptData.error);
+            }
+            
+            // Display current department info
+            document.getElementById('deptId').textContent = deptData.departmentId || '-';
+            document.getElementById('deptName').textContent = deptData.departmentName || '-';
+            
+            const managerFirstName = deptData.managerFirstName || '';
+            const managerLastName = deptData.managerLastName || '';
+            const managerName = `${managerFirstName} ${managerLastName}`.trim() || 'N/A';
+            const managerId = deptData.managerId || 'N/A';
+            
+            document.getElementById('currentManager').textContent = `${managerName} (ID: ${managerId})`;
+            
+            // Load all employees for selection
+            const employeesData = await API.get('/employees?size=1000');
+            const employees = employeesData._embedded?.employeeses || employeesData._embedded?.employees || [];
+            
+            const select = document.getElementById('managerSelect');
+            select.innerHTML = '<option value="">Choose an employee...</option>';
+            
+            employees.forEach(emp => {
+                const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+                const option = document.createElement('option');
+                option.value = emp.employeeId;
+                option.textContent = `${fullName} (ID: ${emp.employeeId})`;
+                
+                // Pre-select current manager
+                if (emp.employeeId === deptData.managerId) {
+                    option.selected = true;
+                }
+                
+                select.appendChild(option);
+            });
+            
+            // Show form
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('formContent').style.display = 'block';
+            
+        } catch (error) {
+            console.error('Error loading data:', error);
+            showError('Failed to load department details: ' + error.message);
+        }
+    }
+    
+    // Handle manager selection change
+    document.getElementById('managerSelect').addEventListener('change', function(e) {
+        const employeeId = e.target.value;
+        const infoDiv = document.getElementById('selectedManagerInfo');
+        
+        if (employeeId) {
+            const selectedOption = this.options[this.selectedIndex];
+            const fullText = selectedOption.textContent;
+            document.getElementById('selectedManagerName').textContent = fullText.replace(/\s*\(ID:.*\)/, '');
+            document.getElementById('selectedManagerId').textContent = employeeId;
+            infoDiv.style.display = 'block';
+        } else {
+            infoDiv.style.display = 'none';
+        }
+    });
+    
+    // Handle form submission
+    document.getElementById('changeManagerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const newManagerId = document.getElementById('managerSelect').value;
+        
+        if (!newManagerId) {
+            alert('Please select a manager');
+            return;
+        }
+        
+        const saveBtn = document.getElementById('saveBtn');
+        const originalBtnText = saveBtn.innerHTML;
+        
+        try {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+            
+            // Call backend to update department manager
+            const response = await fetch(`/api/proxy?endpoint=${encodeURIComponent(`/departments/${departmentId}`)}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    departmentName: currentDepartment.departmentName,
+                    managerId: parseInt(newManagerId),
+                    locationId: currentDepartment.locationId
+                })
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Failed to update department');
+            }
+            
+            // Success - redirect back to department details
+            alert('Manager updated successfully!');
+            window.location.href = `/department-details?departmentId=${departmentId}`;
+            
+        } catch (error) {
+            console.error('Error saving manager:', error);
+            alert('Failed to update manager: ' + error.message);
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalBtnText;
+        }
+    });
+    
+    function showError(message) {
+        document.getElementById('loadingSpinner').style.display = 'none';
+        document.getElementById('formContent').style.display = 'none';
+        document.getElementById('errorMessage').style.display = 'block';
+        document.getElementById('errorText').textContent = message;
+    }
+    
+    // Load data on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadData);
+    } else {
+        loadData();
+    }
+</script>
+</th:block>
+
+</body>
+</html>
