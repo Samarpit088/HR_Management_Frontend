@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Employee Details</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <!-- Header with Smart Back Button -->
+    <div class="row mb-4">
+        <div class="col">
+            <button id="backButton" class="btn btn-outline-primary" onclick="goBack()">
+                <i class="bi bi-arrow-left me-2"></i><span id="backButtonText">Back</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Card -->
+    <div class="card shadow-sm">
+        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-badge-fill me-2"></i>
+                    Employee Details - ID #<span id="empIdDisplay">...</span>
+                </h5>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 text-muted fw-bold">Loading employee details...</p>
+            </div>
+            
+            <!-- Details Content -->
+            <div id="detailsContent" style="display: none;">
+                <!-- Action Buttons -->
+                <div class="d-flex gap-2 mb-4 flex-wrap">
+                    <a href="#" id="editEmployeeLink" class="btn btn-warning">
+                        <i class="bi bi-pencil-square me-2"></i>Edit Details
+                    </a>
+                    <a href="#" id="updateJobLink" class="btn btn-info">
+                        <i class="bi bi-briefcase me-2"></i>Update Job
+                    </a>
+                    <a href="#" id="viewJobHistoryLink" class="btn btn-primary">
+                        <i class="bi bi-clock-history me-2"></i>View Job History
+                    </a>
+                </div>
+                
+                <!-- Personal Information Card -->
+                <div class="card mb-4" style="border-left: 5px solid #667eea;">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="bi bi-person-fill me-2" style="color: #667eea;"></i>
+                            Personal Information
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="text-muted small mb-1">Employee ID</label>
+                                <p class="fw-bold mb-0"><span id="empId" class="text-primary">-</span></p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small mb-1">First Name</label>
+                                <p class="fw-bold mb-0" id="firstName">-</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small mb-1">Last Name</label>
+                                <p class="fw-bold mb-0" id="lastName">-</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small mb-1">Email</label>
+                                <p class="mb-0"><i class="bi bi-envelope me-2"></i><span id="email">-</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small mb-1">Phone Number</label>
+                                <p class="mb-0"><i class="bi bi-telephone me-2"></i><span id="phone">-</span></p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small mb-1">Hire Date</label>
+                                <p class="mb-0"><i class="bi bi-calendar-check me-2"></i><span id="hireDate">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Employment Information Card -->
+                <div class="card mb-4" style="border-left: 5px solid #764ba2;">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="bi bi-briefcase-fill me-2" style="color: #764ba2;"></i>
+                            Employment Information
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="text-muted small mb-1">Job Title</label>
+                                <p class="fw-bold mb-0" id="jobTitle">-</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small mb-1">Department</label>
+                                <p class="fw-bold mb-0" id="deptName">-</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small mb-1">Salary</label>
+                                <p class="fw-bold mb-0 text-success" id="salary">-</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small mb-1">Commission %</label>
+                                <p class="fw-bold mb-0" id="commission">-</p>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small mb-1">Manager</label>
+                                <p class="mb-0" id="managerName">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="errorMessage" class="alert alert-danger animate__animated animate__shakeX" style="display: none;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span id="errorText"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Page-specific scripts -->
+<th:block layout:fragment="scripts">
+<script>
+    console.log('Employee Details script loaded');
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const employeeId = urlParams.get('employeeId');
+    const returnUrl = urlParams.get('returnUrl');
+    let currentEmployee = null;
+    
+    // Smart back button function
+    function goBack() {
+        // Priority 1: Use returnUrl parameter if provided
+        if (returnUrl) {
+            window.location.href = decodeURIComponent(returnUrl);
+            return;
+        }
+        
+        // Priority 2: Check document.referrer to see where we came from
+        const referrer = document.referrer;
+        if (referrer && referrer.includes(window.location.host)) {
+            // Check if we came from region-employees page
+            if (referrer.includes('/region-employees')) {
+                window.location.href = referrer;
+                return;
+            }
+            // Check if we came from a specific page and navigate directly
+            else if (referrer.includes('/job-details')) {
+                const jobIdMatch = referrer.match(/jobId=([^&]+)/);
+                if (jobIdMatch) {
+                    window.location.href = `/job-details?jobId=${jobIdMatch[1]}`;
+                    return;
+                }
+                window.location.href = '/jobs';
+                return;
+            } else if (referrer.includes('/department-details')) {
+                const deptIdMatch = referrer.match(/departmentId=([^&]+)/);
+                if (deptIdMatch) {
+                    window.location.href = `/department-details?departmentId=${deptIdMatch[1]}`;
+                    return;
+                }
+                window.location.href = '/departments';
+                return;
+            } else if (referrer.includes('/job-history')) {
+                window.location.href = `/job-history?employeeId=${employeeId}`;
+                return;
+            } else if (referrer.includes('/employees')) {
+                window.location.href = '/employees';
+                return;
+            } else if (referrer.includes('/jobs')) {
+                window.location.href = '/jobs';
+                return;
+            } else if (referrer.includes('/departments')) {
+                window.location.href = '/departments';
+                return;
+            }
+        }
+        
+        // Priority 3: Default to employees list
+        window.location.href = '/employees';
+    }
+    
+    // Update back button text based on referrer
+    function updateBackButtonText() {
+        const referrer = document.referrer;
+        const backButtonText = document.getElementById('backButtonText');
+        
+        if (returnUrl) {
+            if (returnUrl.includes('/jobs')) {
+                backButtonText.textContent = 'Back to Jobs';
+            } else if (returnUrl.includes('/departments')) {
+                backButtonText.textContent = 'Back to Departments';
+            } else if (returnUrl.includes('/job-history')) {
+                backButtonText.textContent = 'Back to Job History';
+            } else if (returnUrl.includes('/region-employees')) {
+                backButtonText.textContent = 'Back to Region';
+            }
+        } else if (referrer) {
+            if (referrer.includes('/region-employees')) {
+                backButtonText.textContent = 'Back to Region';
+            } else if (referrer.includes('/job-details')) {
+                backButtonText.textContent = 'Back to Job Details';
+            } else if (referrer.includes('/department-details')) {
+                backButtonText.textContent = 'Back to Department Details';
+            } else if (referrer.includes('/job-history')) {
+                backButtonText.textContent = 'Back to Job History';
+            } else if (referrer.includes('/employees')) {
+                backButtonText.textContent = 'Back to Employees';
+            }
+        } else {
+            backButtonText.textContent = 'Back to Employees';
+        }
+    }
+    
+    async function loadEmployeeDetails() {
+        if (!employeeId) {
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorText').textContent = 'No employee ID provided';
+            return;
+        }
+        
+        document.getElementById('empIdDisplay').textContent = employeeId;
+        updateBackButtonText();
+        
+        try {
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('detailsContent').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // Fetch employee details
+            const empData = await API.get(`/employees/${employeeId}`);
+            currentEmployee = empData;
+            
+            // Personal Information
+            document.getElementById('empId').textContent = empData.employeeId || '-';
+            document.getElementById('firstName').textContent = empData.firstName || '-';
+            document.getElementById('lastName').textContent = empData.lastName || '-';
+            document.getElementById('email').textContent = empData.email || '-';
+            document.getElementById('phone').textContent = empData.phoneNumber || '-';
+            document.getElementById('hireDate').textContent = empData.hireDate ? new Date(empData.hireDate).toLocaleDateString() : '-';
+            
+            // Employment Information
+            const salary = empData.salary ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(empData.salary) : '-';
+            const commission = empData.commissionPct ? (parseFloat(empData.commissionPct) * 100).toFixed(2) + '%' : '-';
+            document.getElementById('salary').textContent = salary;
+            document.getElementById('commission').textContent = commission;
+            
+            const jobTitle = empData.job?.jobTitle || '-';
+            const deptName = empData.department?.departmentName || '-';
+            const managerName = empData.manager ? `${empData.manager.firstName || ''} ${empData.manager.lastName || ''}`.trim() : '-';
+            
+            document.getElementById('jobTitle').textContent = jobTitle;
+            document.getElementById('deptName').textContent = deptName;
+            document.getElementById('managerName').textContent = managerName;
+            
+            // Setup action links
+            document.getElementById('editEmployeeLink').href = `/employee-edit?employeeId=${employeeId}`;
+            document.getElementById('updateJobLink').href = `/job-history/update?employeeId=${employeeId}`;
+            document.getElementById('viewJobHistoryLink').href = `/job-history?employeeId=${employeeId}`;
+            
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('detailsContent').style.display = 'block';
+            document.getElementById('detailsContent').classList.add('animate__animated', 'animate__fadeIn');
+        } catch (error) {
+            console.error('Error loading details:', error);
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorText').textContent = 'Failed to load employee details: ' + error.message;
+        }
+    }
+    
+    // Load details on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(loadEmployeeDetails, 100);
+        });
+    } else {
+        setTimeout(loadEmployeeDetails, 100);
+    }
+</script>
+</th:block>
+
+</body>
+</html>

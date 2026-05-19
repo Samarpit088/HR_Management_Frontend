@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Add Employee</title>
+    <script>
+        // Set page title immediately
+        document.title = 'Add Employee - HR Management';
+    </script>
+</head>
+<body>
+<div layout:fragment="content">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <button class="btn btn-outline-primary" onclick="window.location.href='/employees'">
+                <i class="bi bi-arrow-left me-2"></i>Back to Employees
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Card -->
+    <div class="card shadow-sm">
+        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h5 class="mb-0">
+                <i class="bi bi-person-plus-fill me-2"></i>
+                Add New Employee
+            </h5>
+        </div>
+        <div class="card-body">
+            <!-- Success Message -->
+            <div id="successMessage" class="alert alert-success animate__animated animate__fadeIn" style="display: none;">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span id="successText"></span>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="errorMessage" class="alert alert-danger animate__animated animate__shakeX" style="display: none;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span id="errorText"></span>
+            </div>
+            
+            <!-- Add Employee Form -->
+            <form id="addEmployeeForm">
+                <!-- Personal Information Section -->
+                <div class="card mb-4" style="border-left: 5px solid #667eea;">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="bi bi-person-fill me-2" style="color: #667eea;"></i>
+                            Personal Information
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="employeeId" class="form-label">Employee ID <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="employeeId" required>
+                                <small class="text-muted">Must be unique</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="firstName" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="firstName" maxlength="20">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="lastName" class="form-label">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="lastName" required maxlength="25">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="email" required maxlength="25">
+                                <small class="text-muted">Must be unique</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="phoneNumber" class="form-label">Phone Number</label>
+                                <input type="text" class="form-control" id="phoneNumber" maxlength="20" placeholder="555.123.4567">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="hireDate" class="form-label">Hire Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="hireDate" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Employment Information Section -->
+                <div class="card mb-4" style="border-left: 5px solid #764ba2;">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="bi bi-briefcase-fill me-2" style="color: #764ba2;"></i>
+                            Job Assignment
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="jobId" class="form-label">Job <span class="text-danger">*</span></label>
+                                <select class="form-select" id="jobId" required>
+                                    <option value="">Select a job...</option>
+                                </select>
+                                <small class="text-muted">Employee's job role</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="departmentId" class="form-label">Department</label>
+                                <select class="form-select" id="departmentId">
+                                    <option value="">Select a department...</option>
+                                </select>
+                                <small class="text-muted">Employee's department</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/employees'">
+                        <i class="bi bi-x-circle me-1"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-success" id="submitBtn">
+                        <i class="bi bi-check-circle me-1"></i> Add Employee
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Page-specific scripts -->
+<th:block layout:fragment="scripts">
+<script>
+    console.log('Add Employee script loaded');
+    
+    let jobs = [];
+    let departments = [];
+    
+    // Load jobs for dropdown
+    async function loadJobs() {
+        try {
+            const data = await API.get('/jobs?size=100');
+            jobs = data._embedded?.jobses || data._embedded?.jobs || [];
+            
+            const select = document.getElementById('jobId');
+            jobs.forEach(job => {
+                const option = document.createElement('option');
+                option.value = job.jobId;
+                option.textContent = `${job.jobTitle} (${job.jobId})`;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading jobs:', error);
+        }
+    }
+    
+    // Load departments for dropdown
+    async function loadDepartments() {
+        try {
+            const data = await API.get('/departments?size=100');
+            departments = data._embedded?.departmentses || data._embedded?.departments || [];
+            
+            const select = document.getElementById('departmentId');
+            departments.forEach(dept => {
+                const option = document.createElement('option');
+                option.value = dept.departmentId;
+                option.textContent = dept.departmentName;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading departments:', error);
+        }
+    }
+    
+    // Set default hire date to today
+    function setDefaultHireDate() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('hireDate').value = today;
+    }
+    
+    // Handle form submission
+    document.getElementById('addEmployeeForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Hide messages
+        document.getElementById('successMessage').style.display = 'none';
+        document.getElementById('errorMessage').style.display = 'none';
+        
+        // Disable submit button
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Adding...';
+        
+        try {
+            // Collect form data
+            const employeeData = {
+                employeeId: parseInt(document.getElementById('employeeId').value),
+                firstName: document.getElementById('firstName').value || null,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phoneNumber: document.getElementById('phoneNumber').value || null,
+                hireDate: document.getElementById('hireDate').value,
+                job: {
+                    jobId: document.getElementById('jobId').value
+                }
+            };
+            
+            // Add department if selected
+            const departmentId = document.getElementById('departmentId').value;
+            if (departmentId) {
+                employeeData.department = {
+                    departmentId: parseInt(departmentId)
+                };
+            }
+            
+            console.log('Submitting employee data:', employeeData);
+            
+            // Submit to backend
+            const response = await fetch('/api/proxy?endpoint=/api/v1/employees', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(employeeData)
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to add employee');
+            }
+            
+            const result = await response.json();
+            console.log('Employee added successfully:', result);
+            
+            // Show success message
+            document.getElementById('successMessage').style.display = 'block';
+            document.getElementById('successText').textContent = `Employee ${employeeData.firstName} ${employeeData.lastName} (ID: ${employeeData.employeeId}) added successfully!`;
+            
+            // Reset form
+            document.getElementById('addEmployeeForm').reset();
+            setDefaultHireDate();
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Redirect after 2 seconds
+            setTimeout(() => {
+                window.location.href = `/employee-details?employeeId=${employeeData.employeeId}`;
+            }, 2000);
+            
+        } catch (error) {
+            console.error('Error adding employee:', error);
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorText').textContent = error.message || 'Failed to add employee. Please try again.';
+            
+            // Scroll to top to show error
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } finally {
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Add Employee';
+        }
+    });
+    
+    // Initialize page
+    async function initializePage() {
+        setDefaultHireDate();
+        await Promise.all([loadJobs(), loadDepartments()]);
+    }
+    
+    // Load data on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializePage);
+    } else {
+        initializePage();
+    }
+</script>
+</th:block>
+
+</body>
+</html>
