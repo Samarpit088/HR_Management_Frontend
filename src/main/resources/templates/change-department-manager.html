@@ -309,10 +309,10 @@
                 const empId = emp.employeeId.toString();
                 const jobTitle = (emp.job?.jobTitle || '').toLowerCase();
                 
-                return fullName.includes(searchTerm) || 
-                       email.includes(searchTerm) || 
-                       empId.includes(searchTerm) ||
-                       jobTitle.includes(searchTerm);
+                return fullName.startsWith(searchTerm) || 
+                       email.startsWith(searchTerm) || 
+                       empId.startsWith(searchTerm) ||
+                       jobTitle.startsWith(searchTerm);
             });
             displayEmployees(filteredEmployees);
         }, 300);

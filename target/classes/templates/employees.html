@@ -23,9 +23,15 @@
                 </select>
                 <div class="input-group" style="max-width: 250px;">
                     <span class="input-group-text bg-white border-end-0">
-                        <i class="bi bi-search"></i>
+                        <i class="bi bi-person"></i>
                     </span>
-                    <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search employees...">
+                    <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search by name...">
+                </div>
+                <div class="input-group" style="max-width: 250px;">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="bi bi-envelope"></i>
+                    </span>
+                    <input type="text" id="emailSearchInput" class="form-control border-start-0" placeholder="Search by email...">
                 </div>
             </div>
         </div>
@@ -72,7 +78,8 @@
 
 <th:block layout:fragment="scripts">
 <script>
-    let currentPage = 0, pageSize = 20, totalPages = 0, allEmployees = [], departments = [], jobs = [];
+    let currentPage = 0, pageSize = 10, totalPages = 0, departments = [], jobs = [];
+    let currentSearch = '', currentEmailSearch = '', currentDept = '', currentJob = '';
     
     async function loadDepartments() {
         try {
@@ -112,12 +119,19 @@
             document.getElementById('employeesTable').style.display = 'none';
             document.getElementById('errorMessage').style.display = 'none';
             
-            const data = await API.get(`/employees?page=${page}&size=${pageSize}`);
-            allEmployees = data._embedded?.employeeses || data._embedded?.employees || [];
+            // Build query parameters
+            let url = `/employees/search?page=${page}&size=${pageSize}`;
+            if (currentSearch) url += `&query=${encodeURIComponent(currentSearch)}`;
+            if (currentEmailSearch) url += `&email=${encodeURIComponent(currentEmailSearch)}`;
+            if (currentDept) url += `&departmentId=${currentDept}`;
+            if (currentJob) url += `&jobId=${encodeURIComponent(currentJob)}`;
+            
+            const data = await API.get(url);
+            const employees = data._embedded?.employeeses || data._embedded?.employees || [];
             totalPages = data.page?.totalPages || 1;
             currentPage = page;
             
-            displayEmployees(allEmployees);
+            displayEmployees(employees);
             updatePagination();
             
             document.getElementById('loadingSpinner').style.display = 'none';
@@ -150,16 +164,13 @@
         }
         
         employees.forEach((emp, index) => {
-            console.log('Employee data:', emp); // Debug log
             const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
             const jobTitle = emp.job?.jobTitle || emp.jobId || 'N/A';
             const deptName = emp.department?.departmentName || emp.departmentId || 'N/A';
             
-            // Check all possible salary field names
             const salaryValue = emp.salary || emp.Salary || null;
             const salary = salaryValue ? formatCurrency(salaryValue) : 'N/A';
             
-            // Check all possible hire date field names
             const hireDateValue = emp.hireDate || emp.HireDate || emp.hire_date || null;
             const hireDate = formatDate(hireDateValue);
             
@@ -192,6 +203,8 @@
         const pagination = document.getElementById('pagination');
         pagination.innerHTML = '';
         
+        if (totalPages <= 1) return;
+        
         const prevLi = document.createElement('li');
         prevLi.className = `page-item ${currentPage === 0 ? 'disabled' : ''}`;
         prevLi.innerHTML = `<a class="page-link" href="#" onclick="loadEmployees(${currentPage - 1}); return false;"><i class="bi bi-chevron-left"></i> Previous</a>`;
@@ -217,40 +230,28 @@
     document.getElementById('searchInput').addEventListener('input', function(e) {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-            const searchTerm = e.target.value.toLowerCase();
-            const filtered = allEmployees.filter(emp => 
-                `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(searchTerm) ||
-                emp.email.toLowerCase().includes(searchTerm) ||
-                emp.employeeId.toString().includes(searchTerm)
-            );
-            displayEmployees(filtered);
+            currentSearch = e.target.value;
+            loadEmployees(0); // Reset to page 1
+        }, 300);
+    });
+    
+    let emailSearchTimeout;
+    document.getElementById('emailSearchInput').addEventListener('input', function(e) {
+        clearTimeout(emailSearchTimeout);
+        emailSearchTimeout = setTimeout(() => {
+            currentEmailSearch = e.target.value;
+            loadEmployees(0); // Reset to page 1
         }, 300);
     });
     
     document.getElementById('departmentFilter').addEventListener('change', function(e) {
-        const deptId = e.target.value;
-        if (deptId) {
-            const filtered = allEmployees.filter(emp => {
-                const empDeptId = emp.departmentId || emp.department?.departmentId;
-                return empDeptId == deptId;
-            });
-            displayEmployees(filtered);
-        } else {
-            displayEmployees(allEmployees);
-        }
+        currentDept = e.target.value;
+        loadEmployees(0); // Reset to page 1
     });
     
     document.getElementById('jobFilter').addEventListener('change', function(e) {
-        const jobId = e.target.value;
-        if (jobId) {
-            const filtered = allEmployees.filter(emp => {
-                const empJobId = emp.jobId || emp.job?.jobId;
-                return empJobId === jobId;
-            });
-            displayEmployees(filtered);
-        } else {
-            displayEmployees(allEmployees);
-        }
+        currentJob = e.target.value;
+        loadEmployees(0); // Reset to page 1
     });
     
     if (document.readyState === 'loading') {

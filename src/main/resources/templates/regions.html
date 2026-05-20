@@ -136,9 +136,6 @@
                     </a>
                 </td>
                 <td class="text-center">
-                    <a href="/countries?regionId=${region.regionId}" class="btn btn-outline-secondary btn-sm me-2">
-                        <i class="bi bi-flag-fill me-1"></i> View Countries
-                    </a>
                     <a href="/region-employees?regionId=${region.regionId}&regionName=${encodeURIComponent(region.regionName)}" 
                        class="btn btn-primary btn-sm">
                         <i class="bi bi-people-fill me-1"></i> View Employees
@@ -192,8 +189,8 @@
         searchTimeout = setTimeout(() => {
             const searchTerm = e.target.value.toLowerCase();
             const filtered = allRegions.filter(region => 
-                region.regionName.toLowerCase().includes(searchTerm) ||
-                region.regionId.toString().includes(searchTerm)
+                region.regionName.toLowerCase().startsWith(searchTerm) ||
+                region.regionId.toString().startsWith(searchTerm)
             );
             displayRegions(filtered);
         }, 300);

@@ -350,16 +350,50 @@
         }
         
         /* Responsive */
+        @media (max-width: 1200px) {
+            .stat-card h2 {
+                font-size: 2.2em;
+            }
+            
+            .stat-icon {
+                font-size: 3.5em;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .card-body {
+                padding: 20px;
+            }
+            
+            .table thead th {
+                padding: 15px;
+                font-size: 0.8em;
+            }
+            
+            .table tbody td {
+                padding: 15px;
+            }
+        }
+        
         @media (max-width: 768px) {
             .top-header {
                 padding: 10px 15px;
-                flex-direction: column;
-                align-items: flex-start;
+                flex-direction: row;
+                align-items: center;
                 gap: 10px;
+                flex-wrap: wrap;
             }
             
             .logo-text {
-                font-size: 1.2em;
+                font-size: 1.1em;
+                order: 1;
+                flex: 1;
+            }
+            
+            .back-btn {
+                order: 2;
+                font-size: 0.85em;
+                padding: 8px 12px;
             }
             
             .main-content {
@@ -368,6 +402,7 @@
             
             .page-header {
                 padding: 15px 20px;
+                margin-bottom: 15px;
             }
             
             .page-header h1 {
@@ -378,31 +413,231 @@
                 padding: 15px;
             }
             
+            .card-header {
+                padding: 15px 20px;
+            }
+            
             .table-responsive {
                 font-size: 0.85em;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .table thead th {
+                white-space: nowrap;
+                padding: 12px 10px;
+            }
+            
+            .table tbody td {
+                padding: 12px 10px;
             }
             
             .stat-card {
                 padding: 20px;
+                margin-bottom: 15px;
             }
             
             .stat-card h2 {
                 font-size: 2em;
             }
-        }
-        
-        @media (max-width: 576px) {
-            .back-btn {
-                padding: 8px 15px;
+            
+            .stat-icon {
+                font-size: 3em;
+                right: 15px;
+            }
+            
+            .btn {
+                padding: 8px 16px;
                 font-size: 0.9em;
             }
             
-            .logo-text {
+            .btn-sm {
+                padding: 5px 12px;
+                font-size: 0.8em;
+            }
+            
+            .form-control, .form-select {
+                padding: 10px 15px;
+                font-size: 0.95em;
+            }
+            
+            .badge {
+                padding: 6px 12px;
+                font-size: 0.8em;
+            }
+            
+            /* Make cards stack on mobile */
+            .row.g-4 {
+                gap: 15px !important;
+            }
+            
+            .col-md-6, .col-md-4, .col-md-3 {
+                padding-left: 0;
+                padding-right: 0;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .top-header {
+                padding: 8px 10px;
+            }
+            
+            .back-btn {
+                padding: 6px 10px;
+                font-size: 0.8em;
+            }
+            
+            .back-btn i {
+                margin-right: 5px;
                 font-size: 1em;
+            }
+            
+            .logo-text {
+                font-size: 0.95em;
+            }
+            
+            .main-content {
+                padding: 0 8px 8px 8px;
+            }
+            
+            .page-header {
+                padding: 12px 15px;
             }
             
             .page-header h1 {
                 font-size: 1.1em;
+            }
+            
+            .card {
+                border-radius: 15px;
+            }
+            
+            .card-body {
+                padding: 12px;
+            }
+            
+            .card-header {
+                padding: 12px 15px;
+            }
+            
+            .stat-card {
+                padding: 15px;
+            }
+            
+            .stat-card h6 {
+                font-size: 0.75em;
+            }
+            
+            .stat-card h2 {
+                font-size: 1.8em;
+            }
+            
+            .stat-icon {
+                font-size: 2.5em;
+                right: 10px;
+            }
+            
+            .table-responsive {
+                font-size: 0.75em;
+            }
+            
+            .table thead th {
+                padding: 10px 8px;
+                font-size: 0.75em;
+            }
+            
+            .table tbody td {
+                padding: 10px 8px;
+            }
+            
+            .btn {
+                padding: 6px 12px;
+                font-size: 0.85em;
+                border-radius: 8px;
+            }
+            
+            .btn-sm {
+                padding: 4px 10px;
+                font-size: 0.75em;
+            }
+            
+            .form-control, .form-select {
+                padding: 8px 12px;
+                font-size: 0.9em;
+                border-radius: 10px;
+            }
+            
+            .badge {
+                padding: 5px 10px;
+                font-size: 0.75em;
+            }
+            
+            .alert {
+                padding: 15px 18px;
+                font-size: 0.9em;
+            }
+            
+            .pagination {
+                gap: 5px;
+            }
+            
+            .page-link {
+                padding: 8px 12px;
+                font-size: 0.85em;
+            }
+            
+            /* Hide some columns on very small screens */
+            .table .d-none-mobile {
+                display: none !important;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .logo-text {
+                font-size: 0.85em;
+            }
+            
+            .back-btn {
+                padding: 5px 8px;
+                font-size: 0.75em;
+            }
+            
+            .page-header h1 {
+                font-size: 1em;
+            }
+            
+            .stat-card h2 {
+                font-size: 1.5em;
+            }
+            
+            .table-responsive {
+                font-size: 0.7em;
+            }
+        }
+        
+        /* Touch-friendly improvements */
+        @media (hover: none) and (pointer: coarse) {
+            .btn, .page-link, .form-control, .form-select {
+                min-height: 44px; /* iOS recommended touch target size */
+            }
+            
+            .table tbody tr:hover {
+                transform: none; /* Disable hover effects on touch devices */
+            }
+            
+            .card:hover {
+                transform: none;
+            }
+        }
+        
+        /* Landscape orientation on mobile */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .stat-card {
+                padding: 15px;
+            }
+            
+            .stat-card h2 {
+                font-size: 1.8em;
             }
         }
     </style>
@@ -456,29 +691,106 @@
             
             async get(endpoint) {
                 try {
-                    console.log('API.get called with endpoint:', endpoint);
                     // Prepend /api/v1 if not already present
                     const fullEndpoint = endpoint.startsWith('/api/v1') ? endpoint : `/api/v1${endpoint}`;
                     const url = `${this.proxy}?endpoint=${encodeURIComponent(fullEndpoint)}`;
-                    console.log('Fetching URL:', url);
                     
                     const response = await fetch(url);
-                    console.log('Response status:', response.status);
                     
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     const data = await response.json();
-                    console.log('Data received:', data);
                     return data;
                 } catch (error) {
-                    console.error('API Error:', error);
+                    throw error;
+                }
+            },
+            
+            async post(endpoint, data) {
+                try {
+                    const fullEndpoint = endpoint.startsWith('/api/v1') ? endpoint : `/api/v1${endpoint}`;
+                    const url = `${this.proxy}?endpoint=${encodeURIComponent(fullEndpoint)}`;
+                    
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    throw error;
+                }
+            },
+            
+            async patch(endpoint, data) {
+                try {
+                    const fullEndpoint = endpoint.startsWith('/api/v1') ? endpoint : `/api/v1${endpoint}`;
+                    const url = `${this.proxy}?endpoint=${encodeURIComponent(fullEndpoint)}`;
+                    
+                    const response = await fetch(url, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    throw error;
+                }
+            },
+            
+            async put(endpoint, data) {
+                try {
+                    const fullEndpoint = endpoint.startsWith('/api/v1') ? endpoint : `/api/v1${endpoint}`;
+                    const url = `${this.proxy}?endpoint=${encodeURIComponent(fullEndpoint)}`;
+                    
+                    const response = await fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    throw error;
+                }
+            },
+            
+            async delete(endpoint) {
+                try {
+                    const fullEndpoint = endpoint.startsWith('/api/v1') ? endpoint : `/api/v1${endpoint}`;
+                    const url = `${this.proxy}?endpoint=${encodeURIComponent(fullEndpoint)}`;
+                    
+                    const response = await fetch(url, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
                     throw error;
                 }
             }
         };
-        
-        console.log('API helper loaded');
     </script>
     
     <!-- Page-specific scripts -->

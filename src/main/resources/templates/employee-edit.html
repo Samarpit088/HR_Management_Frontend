@@ -53,9 +53,9 @@
                     <h6 class="mb-3"><i class="bi bi-person-fill me-2"></i>Personal Information</h6>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="firstName" class="form-label fw-bold">First Name</label>
-                            <input type="text" class="form-control" id="firstName" placeholder="Enter first name" maxlength="20">
-                            <div class="form-text">Maximum 20 characters</div>
+                            <label for="firstName" class="form-label fw-bold">First Name *</label>
+                            <input type="text" class="form-control" id="firstName" placeholder="Enter first name" required maxlength="20">
+                            <div class="form-text">Maximum 20 characters (required)</div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="lastName" class="form-label fw-bold">Last Name *</label>
@@ -71,9 +71,10 @@
                             <div class="form-text">Maximum 25 characters (required)</div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="phoneNumber" class="form-label fw-bold">Phone Number</label>
-                            <input type="tel" class="form-control" id="phoneNumber" placeholder="Enter phone number" maxlength="20">
-                            <div class="form-text">Format: XXX.XXX.XXXX</div>
+                            <label for="phoneNumber" class="form-label fw-bold">Phone Number *</label>
+                            <input type="tel" class="form-control" id="phoneNumber" placeholder="Enter phone number" 
+                                   required maxlength="20" pattern="[0-9]{10}">
+                            <div class="form-text">Must be exactly 10 digits (required)</div>
                         </div>
                     </div>
                     
@@ -226,6 +227,10 @@
         const departmentId = document.getElementById('departmentId').value;
         
         // Validate required fields
+        if (!firstName) {
+            alert('First name is required');
+            return;
+        }
         if (!lastName) {
             alert('Last name is required');
             return;
@@ -234,12 +239,23 @@
             alert('Email is required');
             return;
         }
+        if (!phoneNumber) {
+            alert('Phone number is required');
+            return;
+        }
         
-        // Build updates object
-        if (firstName) updates.firstName = firstName;
-        if (lastName) updates.lastName = lastName;
-        if (email) updates.email = email;
-        if (phoneNumber) updates.phoneNumber = phoneNumber;
+        // Validate phone number (exactly 10 digits)
+        const phoneDigits = phoneNumber.replace(/[^0-9]/g, '');
+        if (phoneDigits.length !== 10) {
+            alert('Phone number must be exactly 10 digits');
+            return;
+        }
+        
+        // Build updates object - always include required fields
+        updates.firstName = firstName;
+        updates.lastName = lastName;
+        updates.email = email;
+        updates.phoneNumber = phoneNumber;
         if (jobId) updates.jobId = jobId;
         if (departmentId) updates.departmentId = parseInt(departmentId);
         
@@ -251,7 +267,7 @@
             saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
             
             // Call backend to update employee
-            const response = await fetch(`/api/proxy?endpoint=${encodeURIComponent(`/employees/${employeeId}`)}`, {
+            const response = await fetch(`/api/proxy?endpoint=${encodeURIComponent(`/api/v1/employees/${employeeId}`)}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json'

@@ -299,12 +299,12 @@
         filteredEmployees = allEmployees.filter(emp => {
             const matchesCountry = !countryFilter || (emp.countryName || '').toLowerCase() === countryFilter;
             const matchesSearch = !searchTerm || 
-                (emp.firstName || '').toLowerCase().includes(searchTerm) ||
-                (emp.lastName || '').toLowerCase().includes(searchTerm) ||
-                (emp.email || '').toLowerCase().includes(searchTerm) ||
-                (emp.jobTitle || '').toLowerCase().includes(searchTerm) ||
-                (emp.departmentName || '').toLowerCase().includes(searchTerm) ||
-                (emp.countryName || '').toLowerCase().includes(searchTerm);
+                (emp.firstName || '').toLowerCase().startsWith(searchTerm) ||
+                (emp.lastName || '').toLowerCase().startsWith(searchTerm) ||
+                (emp.email || '').toLowerCase().startsWith(searchTerm) ||
+                (emp.jobTitle || '').toLowerCase().startsWith(searchTerm) ||
+                (emp.departmentName || '').toLowerCase().startsWith(searchTerm) ||
+                (emp.countryName || '').toLowerCase().startsWith(searchTerm);
             
             return matchesCountry && matchesSearch;
         });
@@ -363,9 +363,41 @@
         pagination.appendChild(nextLi);
     }
     
-    // Go back to regions
+    // Go back to regions using session storage navigation
     function goBack() {
+        const navHistory = JSON.parse(sessionStorage.getItem('navHistory') || '[]');
+        
+        if (navHistory.length > 1) {
+            navHistory.pop();
+            sessionStorage.setItem('navHistory', JSON.stringify(navHistory));
+            sessionStorage.setItem('isBackNavigation', 'true');
+            const previousPage = navHistory[navHistory.length - 1];
+            window.location.href = previousPage;
+            return;
+        }
+        
+        sessionStorage.removeItem('navHistory');
+        sessionStorage.removeItem('isBackNavigation');
         window.location.href = '/regions';
+    }
+    
+    // Track navigation on page load
+    function trackNavigation() {
+        const currentUrl = window.location.pathname + window.location.search;
+        const navHistory = JSON.parse(sessionStorage.getItem('navHistory') || '[]');
+        const isBackNav = sessionStorage.getItem('isBackNavigation') === 'true';
+        
+        sessionStorage.removeItem('isBackNavigation');
+        
+        if (!isBackNav) {
+            if (navHistory.length === 0 || navHistory[navHistory.length - 1] !== currentUrl) {
+                navHistory.push(currentUrl);
+                if (navHistory.length > 10) {
+                    navHistory.shift();
+                }
+                sessionStorage.setItem('navHistory', JSON.stringify(navHistory));
+            }
+        }
     }
     
     // Event listeners
@@ -379,8 +411,12 @@
     
     // Initialize on page load
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializePage);
+        document.addEventListener('DOMContentLoaded', function() {
+            trackNavigation();
+            initializePage();
+        });
     } else {
+        trackNavigation();
         initializePage();
     }
 </script>

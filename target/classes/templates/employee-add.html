@@ -55,8 +55,8 @@
                                 <small class="text-muted">Must be unique</small>
                             </div>
                             <div class="col-md-4">
-                                <label for="firstName" class="form-label">First Name</label>
-                                <input type="text" class="form-control" id="firstName" maxlength="20">
+                                <label for="firstName" class="form-label">First Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="firstName" required maxlength="20">
                             </div>
                             <div class="col-md-4">
                                 <label for="lastName" class="form-label">Last Name <span class="text-danger">*</span></label>
@@ -68,8 +68,10 @@
                                 <small class="text-muted">Must be unique</small>
                             </div>
                             <div class="col-md-6">
-                                <label for="phoneNumber" class="form-label">Phone Number</label>
-                                <input type="text" class="form-control" id="phoneNumber" maxlength="20" placeholder="555.123.4567">
+                                <label for="phoneNumber" class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="phoneNumber" required maxlength="20" 
+                                       placeholder="555.123.4567" pattern="[0-9]{10}">
+                                <small class="text-muted">Must be exactly 10 digits</small>
                             </div>
                             <div class="col-md-4">
                                 <label for="hireDate" class="form-label">Hire Date <span class="text-danger">*</span></label>
@@ -84,7 +86,7 @@
                     <div class="card-body">
                         <h5 class="card-title mb-4">
                             <i class="bi bi-briefcase-fill me-2" style="color: #764ba2;"></i>
-                            Job Assignment
+                            Job Assignment & Compensation
                         </h5>
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -100,6 +102,18 @@
                                     <option value="">Select a department...</option>
                                 </select>
                                 <small class="text-muted">Employee's department</small>
+                            </div>
+                            <div class="col-md-12">
+                                <label for="salary" class="form-label">Initial Salary <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="salary" required min="0" step="1">
+                                <small id="salaryHelp" class="text-muted">Select a job first to see salary range</small>
+                                <div id="salaryRange" class="mt-2" style="display: none;">
+                                    <div class="alert alert-info mb-0 py-2">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        <strong>Salary Range for this job:</strong>
+                                        <span id="salaryRangeText"></span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -126,6 +140,7 @@
     
     let jobs = [];
     let departments = [];
+    let selectedJob = null;
     
     // Load jobs for dropdown
     async function loadJobs() {
@@ -138,12 +153,65 @@
                 const option = document.createElement('option');
                 option.value = job.jobId;
                 option.textContent = `${job.jobTitle} (${job.jobId})`;
+                option.dataset.minSalary = job.minSalary || '';
+                option.dataset.maxSalary = job.maxSalary || '';
                 select.appendChild(option);
             });
         } catch (error) {
             console.error('Error loading jobs:', error);
         }
     }
+    
+    // Handle job selection change
+    document.getElementById('jobId').addEventListener('change', function(e) {
+        const jobId = e.target.value;
+        if (!jobId) {
+            document.getElementById('salaryRange').style.display = 'none';
+            document.getElementById('salaryHelp').textContent = 'Select a job first to see salary range';
+            document.getElementById('salary').removeAttribute('min');
+            document.getElementById('salary').removeAttribute('max');
+            selectedJob = null;
+            return;
+        }
+        
+        // Find selected job
+        selectedJob = jobs.find(j => j.jobId === jobId);
+        
+        if (selectedJob) {
+            const minSalary = selectedJob.minSalary || 0;
+            const maxSalary = selectedJob.maxSalary || 0;
+            
+            if (minSalary > 0 || maxSalary > 0) {
+                // Show salary range
+                document.getElementById('salaryRange').style.display = 'block';
+                
+                const formatCurrency = (amount) => new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 0
+                }).format(amount);
+                
+                document.getElementById('salaryRangeText').textContent = 
+                    `${formatCurrency(minSalary)} - ${formatCurrency(maxSalary)}`;
+                
+                // Set min/max on salary input
+                if (minSalary > 0) {
+                    document.getElementById('salary').setAttribute('min', minSalary);
+                }
+                if (maxSalary > 0) {
+                    document.getElementById('salary').setAttribute('max', maxSalary);
+                }
+                
+                document.getElementById('salaryHelp').textContent = 
+                    `Salary must be between ${formatCurrency(minSalary)} and ${formatCurrency(maxSalary)}`;
+            } else {
+                document.getElementById('salaryRange').style.display = 'none';
+                document.getElementById('salaryHelp').textContent = 'No salary range defined for this job';
+                document.getElementById('salary').removeAttribute('min');
+                document.getElementById('salary').removeAttribute('max');
+            }
+        }
+    });
     
     // Load departments for dropdown
     async function loadDepartments() {
@@ -169,6 +237,42 @@
         document.getElementById('hireDate').value = today;
     }
     
+    // Verify employee was created with exponential backoff retry
+    async function verifyEmployeeCreated(employeeId, maxRetries = 5) {
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                console.log(`Verifying employee ${employeeId} exists (attempt ${attempt + 1}/${maxRetries})...`);
+                
+                const response = await fetch(`/api/proxy?endpoint=${encodeURIComponent(`/api/v1/employees/${employeeId}`)}`);
+                
+                if (response.ok) {
+                    console.log(`Employee ${employeeId} verified successfully`);
+                    return true;
+                }
+                
+                // If not found and not last attempt, wait and retry
+                if (attempt < maxRetries - 1) {
+                    // Exponential backoff: 100ms, 200ms, 400ms, 800ms, 1600ms
+                    const delay = Math.min(100 * Math.pow(2, attempt), 2000);
+                    console.log(`Employee not found yet, retrying in ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            } catch (error) {
+                console.error(`Error verifying employee (attempt ${attempt + 1}):`, error);
+                
+                // If not last attempt, wait and retry
+                if (attempt < maxRetries - 1) {
+                    const delay = Math.min(100 * Math.pow(2, attempt), 2000);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+        
+        // If all retries failed, log warning but don't fail
+        console.warn(`Could not verify employee ${employeeId} after ${maxRetries} attempts, redirecting anyway`);
+        return false;
+    }
+    
     // Handle form submission
     document.getElementById('addEmployeeForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -183,14 +287,46 @@
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Adding...';
         
         try {
+            // Validate employee ID is positive
+            const employeeId = parseInt(document.getElementById('employeeId').value);
+            if (employeeId <= 0) {
+                throw new Error('Employee ID must be a positive number');
+            }
+            
+            // Validate phone number (exactly 10 digits, numbers only)
+            const phoneNumber = document.getElementById('phoneNumber').value.trim();
+            const phoneDigits = phoneNumber.replace(/[^0-9]/g, ''); // Remove non-digits
+            if (phoneDigits.length !== 10) {
+                throw new Error('Phone number must be exactly 10 digits');
+            }
+            
+            // Validate salary against job range
+            const salary = parseFloat(document.getElementById('salary').value);
+            if (salary <= 0) {
+                throw new Error('Salary must be a positive number');
+            }
+            
+            if (selectedJob) {
+                const minSalary = selectedJob.minSalary || 0;
+                const maxSalary = selectedJob.maxSalary || 0;
+                
+                if (minSalary > 0 && salary < minSalary) {
+                    throw new Error(`Salary must be at least ${new Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 0}).format(minSalary)} for this job`);
+                }
+                if (maxSalary > 0 && salary > maxSalary) {
+                    throw new Error(`Salary cannot exceed ${new Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD', minimumFractionDigits: 0}).format(maxSalary)} for this job`);
+                }
+            }
+            
             // Collect form data
             const employeeData = {
-                employeeId: parseInt(document.getElementById('employeeId').value),
-                firstName: document.getElementById('firstName').value || null,
-                lastName: document.getElementById('lastName').value,
-                email: document.getElementById('email').value,
-                phoneNumber: document.getElementById('phoneNumber').value || null,
+                employeeId: employeeId,
+                firstName: document.getElementById('firstName').value.trim(),
+                lastName: document.getElementById('lastName').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phoneNumber: phoneNumber,
                 hireDate: document.getElementById('hireDate').value,
+                salary: salary,
                 job: {
                     jobId: document.getElementById('jobId').value
                 }
@@ -215,12 +351,32 @@
                 body: JSON.stringify(employeeData)
             });
             
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to add employee');
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+            
+            // Parse response
+            let result;
+            try {
+                result = await response.json();
+                console.log('Response body:', result);
+            } catch (e) {
+                console.error('Failed to parse response:', e);
+                throw new Error('Invalid response from server');
             }
             
-            const result = await response.json();
+            // Check if response indicates an error (even if status is 200)
+            if (!response.ok || result.success === false || result.error) {
+                let errorMessage = 'Failed to add employee';
+                if (result.message) {
+                    errorMessage = result.message;
+                } else if (result.error) {
+                    errorMessage = typeof result.error === 'string' ? result.error : result.error.message || errorMessage;
+                }
+                console.error('Server returned error:', errorMessage);
+                alert('ERROR: ' + errorMessage); // Debug alert
+                throw new Error(errorMessage);
+            }
+            
             console.log('Employee added successfully:', result);
             
             // Show success message
@@ -234,10 +390,21 @@
             // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
             
-            // Redirect after 2 seconds
-            setTimeout(() => {
-                window.location.href = `/employee-details?employeeId=${employeeData.employeeId}`;
-            }, 2000);
+            // Verify employee was created with retry logic before redirecting
+            const verified = await verifyEmployeeCreated(employeeData.employeeId);
+            
+            // Only redirect if verification succeeded
+            if (verified) {
+                // Redirect to employee details after a short delay
+                setTimeout(() => {
+                    window.location.href = `/employee-details?employeeId=${employeeData.employeeId}`;
+                }, 1500);
+            } else {
+                // If verification failed, redirect to employees list instead
+                setTimeout(() => {
+                    window.location.href = `/employees`;
+                }, 2000);
+            }
             
         } catch (error) {
             console.error('Error adding employee:', error);
@@ -246,6 +413,8 @@
             
             // Scroll to top to show error
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // DO NOT REDIRECT ON ERROR - keep error visible
         } finally {
             // Re-enable submit button
             submitBtn.disabled = false;

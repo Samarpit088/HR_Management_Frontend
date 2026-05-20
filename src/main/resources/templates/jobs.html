@@ -11,11 +11,16 @@
         <i class="bi bi-briefcase-fill me-2" style="color: #fa709a;"></i>
         All Job Positions - Managed by Samarpit
       </h5>
-      <div class="input-group" style="max-width: 350px;">
-                <span class="input-group-text bg-white border-end-0">
-                    <i class="bi bi-search"></i>
-                </span>
-        <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search jobs...">
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        <a href="/job-add" class="btn btn-success btn-sm">
+          <i class="bi bi-plus-circle-fill me-1"></i> Add Job
+        </a>
+        <div class="input-group" style="max-width: 300px;">
+          <span class="input-group-text bg-white border-end-0">
+            <i class="bi bi-search"></i>
+          </span>
+          <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search jobs...">
+        </div>
       </div>
     </div>
     <div class="card-body">
@@ -52,13 +57,19 @@
         <i class="bi bi-exclamation-triangle-fill me-2"></i>
         <span id="errorText"></span>
       </div>
+      
+      <div id="successMessage" class="alert alert-success animate__animated animate__fadeIn" style="display: none;">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <span id="successText"></span>
+      </div>
     </div>
   </div>
 </div>
 
 <th:block layout:fragment="scripts">
   <script>
-    let currentPage = 0, pageSize = 20, totalPages = 0, allJobs = [];
+    let currentPage = 0, pageSize = 10, totalPages = 0;
+    let currentSearch = '';
 
     async function loadJobs(page = 0) {
         try {
@@ -66,12 +77,16 @@
             document.getElementById('jobsTable').style.display = 'none';
             document.getElementById('errorMessage').style.display = 'none';
 
-            const data = await API.get(`/jobs?page=${page}&size=${pageSize}`);
-            allJobs = data._embedded?.jobses || data._embedded?.jobs || [];
+            // Build query parameters
+            let url = `/jobs/search?page=${page}&size=${pageSize}`;
+            if (currentSearch) url += `&query=${encodeURIComponent(currentSearch)}`;
+
+            const data = await API.get(url);
+            const jobs = data._embedded?.jobses || data._embedded?.jobs || [];
             totalPages = data.page?.totalPages || 1;
             currentPage = page;
 
-            displayJobs(allJobs);
+            displayJobs(jobs);
             updatePagination();
 
             document.getElementById('loadingSpinner').style.display = 'none';
@@ -122,12 +137,14 @@
                     </div>
                 </td>
                 <td class="text-center">
-                    <a href="/job-details?jobId=${encodeURIComponent(job.jobId)}" class="btn btn-primary btn-sm me-1">
-                        <i class="bi bi-eye me-1"></i> Details
-                    </a>
-                    <a href="/employees?jobId=${job.jobId}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-people-fill me-1"></i> Employees
-                    </a>
+                    <div class="btn-group" role="group">
+                        <a href="/job-details?jobId=${encodeURIComponent(job.jobId)}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-eye me-1"></i> Details
+                        </a>
+                        <a href="/job-edit?jobId=${encodeURIComponent(job.jobId)}" class="btn btn-warning btn-sm">
+                            <i class="bi bi-pencil-square me-1"></i> Edit
+                        </a>
+                    </div>
                 </td>
             `;
             tbody.appendChild(row);
@@ -163,12 +180,8 @@
     document.getElementById('searchInput').addEventListener('input', function(e) {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-            const searchTerm = e.target.value.toLowerCase();
-            const filtered = allJobs.filter(job =>
-                job.jobTitle.toLowerCase().includes(searchTerm) ||
-                job.jobId.toLowerCase().includes(searchTerm)
-            );
-            displayJobs(filtered);
+            currentSearch = e.target.value;
+            loadJobs(0); // Reset to page 1
         }, 300);
     });
 

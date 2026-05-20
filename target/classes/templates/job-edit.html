@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Edit Job</title>
+    <script>
+        document.title = 'Edit Job - HR Management';
+    </script>
+</head>
+<body>
+<div layout:fragment="content">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <button id="backButton" class="btn btn-outline-primary" onclick="goBack()">
+                <i class="bi bi-arrow-left me-2"></i>Back to Job Details
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Card -->
+    <div class="card shadow-sm">
+        <div class="card-header" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white;">
+            <h5 class="mb-0">
+                <i class="bi bi-pencil-square me-2"></i>
+                Edit Job - ID #<span id="jobIdDisplay">...</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 text-muted fw-bold">Loading job details...</p>
+            </div>
+            
+            <!-- Success Message -->
+            <div id="successMessage" class="alert alert-success animate__animated animate__fadeIn" style="display: none;">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span id="successText"></span>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="errorMessage" class="alert alert-danger animate__animated animate__shakeX" style="display: none;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span id="errorText"></span>
+            </div>
+            
+            <!-- Edit Job Form -->
+            <form id="editJobForm" style="display: none;">
+                <!-- Job Information Section -->
+                <div class="card mb-4" style="border-left: 5px solid #fa709a;">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="bi bi-briefcase-fill me-2" style="color: #fa709a;"></i>
+                            Job Information
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="jobId" class="form-label">Job ID</label>
+                                <input type="text" class="form-control" id="jobId" disabled>
+                                <small class="text-muted">Cannot be changed</small>
+                            </div>
+                            <div class="col-md-8">
+                                <label for="jobTitle" class="form-label">Job Title <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="jobTitle" required maxlength="35">
+                                <small class="text-muted">Maximum 35 characters</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Salary Range Section -->
+                <div class="card mb-4" style="border-left: 5px solid #fee140;">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="bi bi-currency-dollar me-2" style="color: #fee140;"></i>
+                            Salary Range
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="minSalary" class="form-label">Minimum Salary</label>
+                                <input type="number" class="form-control" id="minSalary" min="1" max="999999" step="1">
+                                <small class="text-muted">Optional - Must be greater than 0 (max 6 digits)</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="maxSalary" class="form-label">Maximum Salary</label>
+                                <input type="number" class="form-control" id="maxSalary" min="1" max="999999" step="1">
+                                <small class="text-muted">Optional - Must be greater than 0 (max 6 digits)</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" class="btn btn-secondary" onclick="goBack()">
+                        <i class="bi bi-x-circle me-1"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="bi bi-check-circle me-1"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Page-specific scripts -->
+<th:block layout:fragment="scripts">
+<script>
+    console.log('Edit Job script loaded');
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const jobId = urlParams.get('jobId');
+    
+    let originalData = {};
+    
+    function goBack() {
+        window.location.href = `/job-details?jobId=${encodeURIComponent(jobId)}`;
+    }
+    
+    // Load job details
+    async function loadJobDetails() {
+        if (!jobId) {
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorText').textContent = 'No job ID provided';
+            return;
+        }
+        
+        document.getElementById('jobIdDisplay').textContent = jobId;
+        
+        try {
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('editJobForm').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // Fetch job details
+            const jobData = await API.get(`/jobs/${encodeURIComponent(jobId)}`);
+            
+            console.log('Job data:', jobData);
+            originalData = jobData;
+            
+            // Populate form
+            document.getElementById('jobId').value = jobData.jobId || '';
+            document.getElementById('jobTitle').value = jobData.jobTitle || '';
+            document.getElementById('minSalary').value = jobData.minSalary || '';
+            document.getElementById('maxSalary').value = jobData.maxSalary || '';
+            
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('editJobForm').style.display = 'block';
+        } catch (error) {
+            console.error('Error loading details:', error);
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorText').textContent = 'Failed to load job details: ' + error.message;
+        }
+    }
+    
+    // Handle form submission
+    document.getElementById('editJobForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Hide messages
+        document.getElementById('successMessage').style.display = 'none';
+        document.getElementById('errorMessage').style.display = 'none';
+        
+        // Disable submit button
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+        
+        try {
+            // Collect only changed fields
+            const updates = {};
+            
+            const newTitle = document.getElementById('jobTitle').value.trim();
+            if (newTitle !== originalData.jobTitle) {
+                updates.jobTitle = newTitle;
+            }
+            
+            const newMinSalary = document.getElementById('minSalary').value;
+            const oldMinSalary = originalData.minSalary ? originalData.minSalary.toString() : '';
+            if (newMinSalary !== oldMinSalary) {
+                if (newMinSalary !== '' && newMinSalary !== null) {
+                    const minSalaryValue = parseInt(newMinSalary);
+                    if (isNaN(minSalaryValue) || minSalaryValue <= 0) {
+                        throw new Error('Minimum salary must be greater than zero');
+                    }
+                    if (minSalaryValue > 999999) {
+                        throw new Error('Minimum salary can have maximum 6 digits (999999)');
+                    }
+                    updates.minSalary = minSalaryValue;
+                } else {
+                    updates.minSalary = null;
+                }
+            }
+            
+            const newMaxSalary = document.getElementById('maxSalary').value;
+            const oldMaxSalary = originalData.maxSalary ? originalData.maxSalary.toString() : '';
+            if (newMaxSalary !== oldMaxSalary) {
+                if (newMaxSalary !== '' && newMaxSalary !== null) {
+                    const maxSalaryValue = parseInt(newMaxSalary);
+                    if (isNaN(maxSalaryValue) || maxSalaryValue <= 0) {
+                        throw new Error('Maximum salary must be greater than zero');
+                    }
+                    if (maxSalaryValue > 999999) {
+                        throw new Error('Maximum salary can have maximum 6 digits (999999)');
+                    }
+                    updates.maxSalary = maxSalaryValue;
+                } else {
+                    updates.maxSalary = null;
+                }
+            }
+            
+            // Check if anything changed
+            if (Object.keys(updates).length === 0) {
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('errorText').textContent = 'No changes detected';
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Save Changes';
+                return;
+            }
+            
+            // Validate salary range
+            const finalMinSalary = updates.minSalary !== undefined ? updates.minSalary : originalData.minSalary;
+            const finalMaxSalary = updates.maxSalary !== undefined ? updates.maxSalary : originalData.maxSalary;
+            
+            if (finalMinSalary && finalMaxSalary && finalMinSalary > finalMaxSalary) {
+                throw new Error('Minimum salary cannot be greater than maximum salary');
+            }
+            
+            console.log('Submitting updates:', updates);
+            
+            // Submit to backend
+            const response = await fetch(`/api/proxy?endpoint=${encodeURIComponent(`/api/v1/jobs/${jobId}`)}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updates)
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || errorData.error || 'Failed to update job');
+            }
+            
+            const result = await response.json();
+            console.log('Job updated successfully:', result);
+            
+            // Show success message
+            document.getElementById('successMessage').style.display = 'block';
+            document.getElementById('successText').textContent = 'Job updated successfully!';
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Redirect after 1.5 seconds
+            setTimeout(() => {
+                goBack();
+            }, 1500);
+            
+        } catch (error) {
+            console.error('Error updating job:', error);
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorText').textContent = error.message || 'Failed to update job. Please try again.';
+            
+            // Scroll to top to show error
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Save Changes';
+        }
+    });
+    
+    // Load data on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadJobDetails);
+    } else {
+        loadJobDetails();
+    }
+</script>
+</th:block>
+
+</body>
+</html>

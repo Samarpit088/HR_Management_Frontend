@@ -1,0 +1,35 @@
+version: '3.8'
+
+# Production Docker Compose - Uses pre-built image from Docker Hub for AWS deployment
+services:
+  # Frontend Service (from Docker Hub, connects to AWS Backend)
+  frontend:
+    image: ${DOCKER_USERNAME}/hr-frontend:latest
+    container_name: hr_frontend_prod
+    restart: always
+    ports:
+      - "${FRONTEND_PORT:-8081}:8081"
+    environment:
+      # Backend API URL (AWS Backend from .env)
+      BACKEND_API_URL: ${BACKEND_API_URL}
+      
+      # Server Configuration
+      SERVER_PORT: 8081
+      
+      # Thymeleaf Configuration (production)
+      SPRING_THEMELEAF_CACHE: ${SPRING_THEMELEAF_CACHE:-true}
+      
+      # Java Options for production
+      JAVA_OPTS: "-Xmx1024m -Xms512m -XX:+UseG1GC"
+    networks:
+      - hr_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  hr_network:
+    driver: bridge

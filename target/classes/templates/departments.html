@@ -11,7 +11,10 @@
                 <i class="bi bi-diagram-3-fill me-2" style="color: #4facfe;"></i>
                 All Departments - Managed by Nakul
             </h5>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <a href="/department-add" class="btn btn-success btn-sm">
+                    <i class="bi bi-plus-circle-fill me-1"></i> Add Department
+                </a>
                 <select id="locationFilter" class="form-select form-select-sm" style="width: 200px;">
                     <option value="">All Locations</option>
                 </select>
@@ -62,7 +65,8 @@
 
 <th:block layout:fragment="scripts">
 <script>
-    let currentPage = 0, pageSize = 20, totalPages = 0, allDepartments = [], locations = [];
+    let currentPage = 0, pageSize = 10, totalPages = 0, locations = [];
+    let currentSearch = '', currentLocation = '';
     
     async function loadLocations() {
         try {
@@ -86,12 +90,17 @@
             document.getElementById('departmentsTable').style.display = 'none';
             document.getElementById('errorMessage').style.display = 'none';
             
-            const data = await API.get(`/departments?page=${page}&size=${pageSize}`);
-            allDepartments = data._embedded?.departmentses || data._embedded?.departments || [];
+            // Build query parameters
+            let url = `/departments/search?page=${page}&size=${pageSize}`;
+            if (currentSearch) url += `&query=${encodeURIComponent(currentSearch)}`;
+            if (currentLocation) url += `&locationId=${currentLocation}`;
+            
+            const data = await API.get(url);
+            const departments = data._embedded?.departmentses || data._embedded?.departments || [];
             totalPages = data.page?.totalPages || 1;
             currentPage = page;
             
-            displayDepartments(allDepartments);
+            displayDepartments(departments);
             updatePagination();
             
             document.getElementById('loadingSpinner').style.display = 'none';
@@ -114,7 +123,7 @@
         }
         
         departments.forEach((dept, index) => {
-            // Use flat @Value projection fields
+            // Handle manager name
             let managerName = 'N/A';
             if (dept.managerFirstName || dept.managerLastName) {
                 const firstName = dept.managerFirstName || '';
@@ -122,11 +131,21 @@
                 managerName = `${firstName} ${lastName}`.trim();
             }
             
+            // Handle location - support both flat and nested formats
             let locationInfo = 'N/A';
-            if (dept.locationCity) {
+            if (dept.location && dept.location.city) {
+                // Nested format from search endpoint
+                const city = dept.location.city || 'Unknown';
+                const locationId = dept.location.locationId || dept.locationId;
+                locationInfo = `${city} (${locationId})`;
+            } else if (dept.locationCity) {
+                // Flat format (legacy)
                 const city = dept.locationCity || 'Unknown';
                 const locationId = dept.locationId;
                 locationInfo = `${city} (${locationId})`;
+            } else if (dept.locationId) {
+                // Only ID available
+                locationInfo = `Location ${dept.locationId}`;
             }
             
             const row = document.createElement('tr');
@@ -181,25 +200,14 @@
     document.getElementById('searchInput').addEventListener('input', function(e) {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-            const searchTerm = e.target.value.toLowerCase();
-            const filtered = allDepartments.filter(dept => 
-                dept.departmentName.toLowerCase().includes(searchTerm) ||
-                dept.departmentId.toString().includes(searchTerm)
-            );
-            displayDepartments(filtered);
+            currentSearch = e.target.value;
+            loadDepartments(0); // Reset to page 1
         }, 300);
     });
     
     document.getElementById('locationFilter').addEventListener('change', function(e) {
-        const locationId = e.target.value;
-        if (locationId) {
-            const filtered = allDepartments.filter(dept => {
-                return dept.locationId == locationId;
-            });
-            displayDepartments(filtered);
-        } else {
-            displayDepartments(allDepartments);
-        }
+        currentLocation = e.target.value;
+        loadDepartments(0); // Reset to page 1
     });
     
     if (document.readyState === 'loading') {

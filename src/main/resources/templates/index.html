@@ -10,41 +10,40 @@
         
         .team-member {
             transition: all 0.3s;
-            padding: 15px;
-            border-radius: 15px;
+            padding: 20px;
+            border-radius: 20px;
+            border: 2px solid transparent;
         }
         
         .team-member:hover {
-            transform: translateY(-10px);
+            transform: translateY(-15px);
             background: rgba(102, 126, 234, 0.05);
+            border-color: rgba(102, 126, 234, 0.2);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
         
         .team-avatar {
-            width: 100px;
-            height: 100px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5em;
             color: white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: all 0.3s;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            transition: all 0.4s;
         }
         
         .team-member:hover .team-avatar {
             transform: scale(1.1) rotate(5deg);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
         }
         
-        .team-member h6 {
-            color: #2d3748;
-            font-weight: 600;
-            margin-bottom: 5px;
+        .team-member h4 {
+            transition: all 0.3s;
         }
         
-        .team-member small {
-            font-size: 0.85em;
+        .team-member:hover h4 {
+            color: #667eea !important;
+            transform: scale(1.05);
         }
     </style>
 </head>
@@ -126,228 +125,94 @@
                 <div class="card-header">
                     <h5 class="mb-0">
                         <i class="bi bi-people-fill me-2" style="color: #667eea;"></i>
-                        Our Team
+                        Our Team - HR Management System
                     </h5>
+                    <p class="text-muted mb-0 mt-2">Meet the team behind this comprehensive HR management platform</p>
                 </div>
-                <div class="card-body">
-                    <div class="row g-4">
-                        <!-- Kartik - Job History -->
-                        <div class="col-md-4 col-lg-2">
-                            <a href="/job-history" class="text-decoration-none">
-                                <div class="text-center team-member">
-                                    <div class="team-avatar mx-auto mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                        <i class="bi bi-clock-history"></i>
+                <div class="card-body py-5">
+                    <div class="row g-4 justify-content-center">
+                        <!-- Navya - Employees -->
+                        <div class="col-md-6 col-lg-4">
+                            <a href="/employees" class="text-decoration-none">
+                                <div class="text-center team-member p-4">
+                                    <div class="team-avatar mx-auto mb-4" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); width: 150px; height: 150px; font-size: 4em;">
+                                        <i class="bi bi-people-fill"></i>
                                     </div>
-                                    <h6 class="mb-1">Kartik</h6>
-                                    <small class="text-muted">Job History</small>
-                                </div>
-                            </a>
-                        </div>
-                        
-                        <!-- Nakul - Departments -->
-                        <div class="col-md-4 col-lg-2">
-                            <a href="/departments" class="text-decoration-none">
-                                <div class="text-center team-member">
-                                    <div class="team-avatar mx-auto mb-3" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                                        <i class="bi bi-diagram-3-fill"></i>
-                                    </div>
-                                    <h6 class="mb-1">Nakul</h6>
-                                    <small class="text-muted">Departments</small>
+                                    <h4 class="mb-2" style="color: #2d3748; font-weight: 700;">Navya</h4>
+                                    <p class="text-muted mb-3" style="font-size: 1.1em;">Employee Directory</p>
+                                    <p class="text-muted small">Manage employee records, personal information, contact details, and maintain the complete employee database.</p>
                                 </div>
                             </a>
                         </div>
                         
                         <!-- Samarpit - Jobs -->
-                        <div class="col-md-4 col-lg-2">
+                        <div class="col-md-6 col-lg-4">
                             <a href="/jobs" class="text-decoration-none">
-                                <div class="text-center team-member">
-                                    <div class="team-avatar mx-auto mb-3" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                                <div class="text-center team-member p-4">
+                                    <div class="team-avatar mx-auto mb-4" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); width: 150px; height: 150px; font-size: 4em;">
                                         <i class="bi bi-briefcase-fill"></i>
                                     </div>
-                                    <h6 class="mb-1">Samarpit</h6>
-                                    <small class="text-muted">Jobs</small>
+                                    <h4 class="mb-2" style="color: #2d3748; font-weight: 700;">Samarpit</h4>
+                                    <p class="text-muted mb-3" style="font-size: 1.1em;">Job Position Management</p>
+                                    <p class="text-muted small">Define job roles, set salary ranges, manage job titles, and maintain comprehensive job descriptions.</p>
                                 </div>
                             </a>
                         </div>
                         
-                        <!-- Navya - Employees -->
-                        <div class="col-md-4 col-lg-2">
-                            <a href="/employees" class="text-decoration-none">
-                                <div class="text-center team-member">
-                                    <div class="team-avatar mx-auto mb-3" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                                        <i class="bi bi-people-fill"></i>
+                        <!-- Nakul - Departments -->
+                        <div class="col-md-6 col-lg-4">
+                            <a href="/departments" class="text-decoration-none">
+                                <div class="text-center team-member p-4">
+                                    <div class="team-avatar mx-auto mb-4" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); width: 150px; height: 150px; font-size: 4em;">
+                                        <i class="bi bi-diagram-3-fill"></i>
                                     </div>
-                                    <h6 class="mb-1">Navya</h6>
-                                    <small class="text-muted">Employees</small>
+                                    <h4 class="mb-2" style="color: #2d3748; font-weight: 700;">Nakul</h4>
+                                    <p class="text-muted mb-3" style="font-size: 1.1em;">Department Management</p>
+                                    <p class="text-muted small">Organize company structure, manage department hierarchies, assign managers, and track departmental information.</p>
                                 </div>
                             </a>
                         </div>
                         
-                        <!-- Rupika - Regions & Countries -->
-                        <div class="col-md-4 col-lg-2">
-                            <a href="/regions" class="text-decoration-none">
-                                <div class="text-center team-member">
-                                    <div class="team-avatar mx-auto mb-3" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
-                                        <i class="bi bi-globe2"></i>
+                        <!-- Kartik - Job History -->
+                        <div class="col-md-6 col-lg-4">
+                            <a href="/job-history" class="text-decoration-none">
+                                <div class="text-center team-member p-4">
+                                    <div class="team-avatar mx-auto mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 150px; height: 150px; font-size: 4em;">
+                                        <i class="bi bi-clock-history"></i>
                                     </div>
-                                    <h6 class="mb-1">Rupika</h6>
-                                    <small class="text-muted">Regions & Countries</small>
+                                    <h4 class="mb-2" style="color: #2d3748; font-weight: 700;">Kartik</h4>
+                                    <p class="text-muted mb-3" style="font-size: 1.1em;">Job History Management</p>
+                                    <p class="text-muted small">Track employee career progression, job changes, promotions, and salary history with comprehensive timeline views.</p>
                                 </div>
                             </a>
                         </div>
                         
                         <!-- Tanish - Locations -->
-                        <div class="col-md-4 col-lg-2">
+                        <div class="col-md-6 col-lg-4">
                             <a href="/locations" class="text-decoration-none">
-                                <div class="text-center team-member">
-                                    <div class="team-avatar mx-auto mb-3" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+                                <div class="text-center team-member p-4">
+                                    <div class="team-avatar mx-auto mb-4" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); width: 150px; height: 150px; font-size: 4em;">
                                         <i class="bi bi-geo-alt-fill"></i>
                                     </div>
-                                    <h6 class="mb-1">Tanish</h6>
-                                    <small class="text-muted">Locations</small>
+                                    <h4 class="mb-2" style="color: #2d3748; font-weight: 700;">Tanish</h4>
+                                    <p class="text-muted mb-3" style="font-size: 1.1em;">Location Management</p>
+                                    <p class="text-muted small">Track office locations, addresses, manage facilities, and maintain location-based organizational data.</p>
                                 </div>
                             </a>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="row g-4 mt-1">
-        <div class="col-md-6">
-            <div class="card animate__animated animate__fadeInLeft">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="bi bi-grid-3x3-gap-fill me-2" style="color: #667eea;"></i>
-                        Organization Management
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="list-group list-group-flush">
-                        <a href="/regions" class="list-group-item list-group-item-action border-0 rounded-3 mb-2" style="transition: all 0.3s;">
-                            <div class="d-flex align-items-center">
-                                <div class="rounded-circle p-3 me-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                    <i class="bi bi-globe2 text-white" style="font-size: 1.5em;"></i>
+                        
+                        <!-- Rupika - Regions & Countries -->
+                        <div class="col-md-6 col-lg-4">
+                            <a href="/regions" class="text-decoration-none">
+                                <div class="text-center team-member p-4">
+                                    <div class="team-avatar mx-auto mb-4" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); width: 150px; height: 150px; font-size: 4em;">
+                                        <i class="bi bi-globe2"></i>
+                                    </div>
+                                    <h4 class="mb-2" style="color: #2d3748; font-weight: 700;">Rupika</h4>
+                                    <p class="text-muted mb-3" style="font-size: 1.1em;">Regional Management</p>
+                                    <p class="text-muted small">Manage geographical regions, countries, and organize global operations across different territories.</p>
                                 </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-0">Manage Regions</h6>
-                                    <small class="text-muted">View and manage geographical regions</small>
-                                </div>
-                                <i class="bi bi-chevron-right text-muted"></i>
-                            </div>
-                        </a>
-                        <a href="/countries" class="list-group-item list-group-item-action border-0 rounded-3 mb-2" style="transition: all 0.3s;">
-                            <div class="d-flex align-items-center">
-                                <div class="rounded-circle p-3 me-3" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                                    <i class="bi bi-flag-fill text-white" style="font-size: 1.5em;"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-0">Manage Countries</h6>
-                                    <small class="text-muted">View and manage countries</small>
-                                </div>
-                                <i class="bi bi-chevron-right text-muted"></i>
-                            </div>
-                        </a>
-                        <a href="/locations" class="list-group-item list-group-item-action border-0 rounded-3 mb-2" style="transition: all 0.3s;">
-                            <div class="d-flex align-items-center">
-                                <div class="rounded-circle p-3 me-3" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-                                    <i class="bi bi-geo-alt-fill text-white" style="font-size: 1.5em;"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-0">Manage Locations</h6>
-                                    <small class="text-muted">View and manage office locations</small>
-                                </div>
-                                <i class="bi bi-chevron-right text-muted"></i>
-                            </div>
-                        </a>
-                        <a href="/departments" class="list-group-item list-group-item-action border-0 rounded-3" style="transition: all 0.3s;">
-                            <div class="d-flex align-items-center">
-                                <div class="rounded-circle p-3 me-3" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                                    <i class="bi bi-diagram-3-fill text-white" style="font-size: 1.5em;"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-0">Manage Departments</h6>
-                                    <small class="text-muted">View and manage departments</small>
-                                </div>
-                                <i class="bi bi-chevron-right text-muted"></i>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6">
-            <div class="card animate__animated animate__fadeInRight">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="bi bi-person-badge-fill me-2" style="color: #667eea;"></i>
-                        HR Management
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="list-group list-group-flush">
-                        <a href="/jobs" class="list-group-item list-group-item-action border-0 rounded-3 mb-2" style="transition: all 0.3s;">
-                            <div class="d-flex align-items-center">
-                                <div class="rounded-circle p-3 me-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                    <i class="bi bi-briefcase-fill text-white" style="font-size: 1.5em;"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-0">Job Positions</h6>
-                                    <small class="text-muted">View and manage job roles</small>
-                                </div>
-                                <i class="bi bi-chevron-right text-muted"></i>
-                            </div>
-                        </a>
-                        <a href="/employees" class="list-group-item list-group-item-action border-0 rounded-3 mb-2" style="transition: all 0.3s;">
-                            <div class="d-flex align-items-center">
-                                <div class="rounded-circle p-3 me-3" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                                    <i class="bi bi-people-fill text-white" style="font-size: 1.5em;"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-0">Employee Directory</h6>
-                                    <small class="text-muted">View and manage employees</small>
-                                </div>
-                                <i class="bi bi-chevron-right text-muted"></i>
-                            </div>
-                        </a>
-                        <a href="/job-history" class="list-group-item list-group-item-action border-0 rounded-3" style="transition: all 0.3s;">
-                            <div class="d-flex align-items-center">
-                                <div class="rounded-circle p-3 me-3" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-                                    <i class="bi bi-clock-history text-white" style="font-size: 1.5em;"></i>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-0">Job History</h6>
-                                    <small class="text-muted">Track employee job changes</small>
-                                </div>
-                                <i class="bi bi-chevron-right text-muted"></i>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card animate__animated animate__fadeInUp" style="animation-delay: 0.4s">
-                <div class="card-body text-center py-4">
-                    <div class="d-flex align-items-center justify-content-center gap-4 flex-wrap">
-                        <div>
-                            <i class="bi bi-check-circle-fill text-success" style="font-size: 2em;"></i>
-                            <p class="mb-0 mt-2"><strong>Backend API:</strong> <span class="badge bg-success">Connected</span></p>
-                        </div>
-                        <div class="vr" style="height: 50px;"></div>
-                        <div>
-                            <i class="bi bi-server text-primary" style="font-size: 2em;"></i>
-                            <p class="mb-0 mt-2"><strong>API Endpoint:</strong> <code class="bg-light px-3 py-2 rounded">http://13.205.138.59:8080/api/v1</code></p>
-                        </div>
-                        <div class="vr" style="height: 50px;"></div>
-                        <div>
-                            <i class="bi bi-code-square text-info" style="font-size: 2em;"></i>
-                            <p class="mb-0 mt-2"><strong>Version:</strong> <span class="badge bg-info">1.0.0</span></p>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -359,7 +224,10 @@
 <!-- Page-specific scripts -->
 <th:block layout:fragment="scripts">
     <script>
-        console.log('Index.html script loaded');
+        
+        // Clear navigation history when dashboard loads
+        sessionStorage.removeItem('navHistory');
+        sessionStorage.removeItem('isBackNavigation');
         
         async function fetchStats() {
             console.log('fetchStats() called');

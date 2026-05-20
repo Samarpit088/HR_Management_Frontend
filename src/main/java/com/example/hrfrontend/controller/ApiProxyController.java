@@ -17,29 +17,20 @@ public class ApiProxyController {
 
     @GetMapping
     public ResponseEntity<String> proxyGet(@RequestParam String endpoint) {
-        System.out.println("Proxy request received for endpoint: " + endpoint);
-        
         try {
             String response = webClient.get()
                     .uri(endpoint)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .doOnError(error -> System.err.println("WebClient error: " + error.getMessage()))
                     .onErrorResume(e -> {
-                        System.err.println("Error calling API: " + e.getMessage());
-                        e.printStackTrace();
                         return Mono.just("{\"error\":\"" + e.getMessage().replace("\"", "'") + "\"}");
                     })
                     .block();
-            
-            System.out.println("Response received, length: " + (response != null ? response.length() : 0));
             
             return ResponseEntity.ok()
                     .header("Content-Type", "application/json")
                     .body(response);
         } catch (Exception e) {
-            System.err.println("Exception in proxy: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("{\"error\":\"" + e.getMessage().replace("\"", "'") + "\"}");
         }
@@ -47,9 +38,6 @@ public class ApiProxyController {
     
     @PatchMapping
     public ResponseEntity<String> proxyPatch(@RequestParam String endpoint, @RequestBody String body) {
-        System.out.println("Proxy PATCH request received for endpoint: " + endpoint);
-        System.out.println("Request body: " + body);
-        
         try {
             String response = webClient.patch()
                     .uri(endpoint)
@@ -57,22 +45,15 @@ public class ApiProxyController {
                     .bodyValue(body)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .doOnError(error -> System.err.println("WebClient error: " + error.getMessage()))
                     .onErrorResume(e -> {
-                        System.err.println("Error calling API: " + e.getMessage());
-                        e.printStackTrace();
                         return Mono.just("{\"error\":\"" + e.getMessage().replace("\"", "'") + "\"}");
                     })
                     .block();
-            
-            System.out.println("Response received, length: " + (response != null ? response.length() : 0));
             
             return ResponseEntity.ok()
                     .header("Content-Type", "application/json")
                     .body(response);
         } catch (Exception e) {
-            System.err.println("Exception in proxy: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("{\"error\":\"" + e.getMessage().replace("\"", "'") + "\"}");
         }
@@ -80,32 +61,96 @@ public class ApiProxyController {
     
     @PutMapping
     public ResponseEntity<String> proxyPut(@RequestParam String endpoint, @RequestBody String body) {
-        System.out.println("Proxy PUT request received for endpoint: " + endpoint);
-        System.out.println("Request body: " + body);
-        
         try {
             String response = webClient.put()
                     .uri(endpoint)
                     .header("Content-Type", "application/json")
                     .bodyValue(body)
                     .retrieve()
+                    .onStatus(
+                        status -> status.is4xxClientError() || status.is5xxServerError(),
+                        clientResponse -> clientResponse.bodyToMono(String.class)
+                            .flatMap(errorBody -> Mono.error(new RuntimeException(errorBody)))
+                    )
                     .bodyToMono(String.class)
-                    .doOnError(error -> System.err.println("WebClient error: " + error.getMessage()))
                     .onErrorResume(e -> {
-                        System.err.println("Error calling API: " + e.getMessage());
-                        e.printStackTrace();
-                        return Mono.just("{\"error\":\"" + e.getMessage().replace("\"", "'") + "\"}");
+                        String errorMessage = e.getMessage();
+                        if (errorMessage != null && errorMessage.startsWith("{")) {
+                            return Mono.just(errorMessage);
+                        } else {
+                            return Mono.just("{\"error\":\"" + (errorMessage != null ? errorMessage.replace("\"", "'") : "Unknown error") + "\"}");
+                        }
                     })
                     .block();
-            
-            System.out.println("Response received, length: " + (response != null ? response.length() : 0));
             
             return ResponseEntity.ok()
                     .header("Content-Type", "application/json")
                     .body(response);
         } catch (Exception e) {
-            System.err.println("Exception in proxy: " + e.getMessage());
-            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"error\":\"" + e.getMessage().replace("\"", "'") + "\"}");
+        }
+    }
+    
+    @PostMapping
+    public ResponseEntity<String> proxyPost(@RequestParam String endpoint, @RequestBody String body) {
+        try {
+            String response = webClient.post()
+                    .uri(endpoint)
+                    .header("Content-Type", "application/json")
+                    .bodyValue(body)
+                    .retrieve()
+                    .onStatus(
+                        status -> status.is4xxClientError() || status.is5xxServerError(),
+                        clientResponse -> clientResponse.bodyToMono(String.class)
+                            .flatMap(errorBody -> Mono.error(new RuntimeException(errorBody)))
+                    )
+                    .bodyToMono(String.class)
+                    .onErrorResume(e -> {
+                        String errorMessage = e.getMessage();
+                        if (errorMessage != null && errorMessage.startsWith("{")) {
+                            return Mono.just(errorMessage);
+                        } else {
+                            return Mono.just("{\"error\":\"" + (errorMessage != null ? errorMessage.replace("\"", "'") : "Unknown error") + "\"}");
+                        }
+                    })
+                    .block();
+            
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/json")
+                    .body(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"error\":\"" + e.getMessage().replace("\"", "'") + "\"}");
+        }
+    }
+    
+    @DeleteMapping
+    public ResponseEntity<String> proxyDelete(@RequestParam String endpoint) {
+        try {
+            String response = webClient.delete()
+                    .uri(endpoint)
+                    .retrieve()
+                    .onStatus(
+                        status -> status.is4xxClientError() || status.is5xxServerError(),
+                        clientResponse -> clientResponse.bodyToMono(String.class)
+                            .flatMap(errorBody -> Mono.error(new RuntimeException(errorBody)))
+                    )
+                    .bodyToMono(String.class)
+                    .onErrorResume(e -> {
+                        String errorMessage = e.getMessage();
+                        if (errorMessage != null && errorMessage.startsWith("{")) {
+                            return Mono.just(errorMessage);
+                        } else {
+                            return Mono.just("{\"error\":\"" + (errorMessage != null ? errorMessage.replace("\"", "'") : "Unknown error") + "\"}");
+                        }
+                    })
+                    .block();
+            
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/json")
+                    .body(response != null ? response : "{\"message\":\"Deleted successfully\"}");
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("{\"error\":\"" + e.getMessage().replace("\"", "'") + "\"}");
         }

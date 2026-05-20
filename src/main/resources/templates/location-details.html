@@ -8,7 +8,7 @@
     <div class="row mb-3">
         <div class="col">
             <a href="/locations" class="btn btn-outline-primary">
-                <i class="bi bi-arrow-left me-2"></i>Back to Locations
+                <i class="bi bi-arrow-left me-2"></i>Back
             </a>
         </div>
     </div>
@@ -102,6 +102,25 @@
     const urlParams = new URLSearchParams(window.location.search);
     const locationId = urlParams.get('locationId');
     
+    // Track navigation on page load
+    function trackNavigation() {
+        const currentUrl = window.location.pathname + window.location.search;
+        const navHistory = JSON.parse(sessionStorage.getItem('navHistory') || '[]');
+        const isBackNav = sessionStorage.getItem('isBackNavigation') === 'true';
+        
+        sessionStorage.removeItem('isBackNavigation');
+        
+        if (!isBackNav) {
+            if (navHistory.length === 0 || navHistory[navHistory.length - 1] !== currentUrl) {
+                navHistory.push(currentUrl);
+                if (navHistory.length > 10) {
+                    navHistory.shift();
+                }
+                sessionStorage.setItem('navHistory', JSON.stringify(navHistory));
+            }
+        }
+    }
+    
     async function loadLocationDetails() {
         if (!locationId) {
             document.getElementById('errorMessage').style.display = 'block';
@@ -125,8 +144,8 @@
             document.getElementById('stateProvince').textContent = locData.stateProvince || '-';
             document.getElementById('countryId').textContent = locData.countryId || '-';
             
-            // Fetch departments at this location
-            const deptData = await API.get(`/departments/search/findByLocationLocationId?locationId=${locationId}&size=100`);
+            // Fetch departments at this location using custom search endpoint
+            const deptData = await API.get(`/departments/search?locationId=${locationId}&size=100`);
             const departments = deptData._embedded?.departmentses || deptData._embedded?.departments || [];
             
             displayDepartments(departments);
@@ -165,7 +184,14 @@
             
             row.innerHTML = `
                 <td><span class="badge bg-primary">${dept.departmentId}</span></td>
-                <td><strong>${dept.departmentName || '-'}</strong></td>
+                <td>
+                    <a href="/department-details?departmentId=${dept.departmentId}" 
+                       class="text-decoration-none"
+                       onclick="sessionStorage.setItem('navHistory', JSON.stringify([...JSON.parse(sessionStorage.getItem('navHistory') || '[]'), window.location.pathname + window.location.search]));">
+                        <strong>${dept.departmentName || '-'}</strong>
+                        <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </td>
                 <td>${dept.managerId || 'N/A'}</td>
             `;
             tbody.appendChild(row);
@@ -175,9 +201,11 @@
     // Load details on page load
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
+            trackNavigation();
             setTimeout(loadLocationDetails, 100);
         });
     } else {
+        trackNavigation();
         setTimeout(loadLocationDetails, 100);
     }
 </script>

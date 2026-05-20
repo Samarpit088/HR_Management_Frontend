@@ -200,8 +200,8 @@
         searchTimeout = setTimeout(() => {
             const searchTerm = e.target.value.toLowerCase();
             const filtered = allCountries.filter(country => 
-                country.countryName.toLowerCase().includes(searchTerm) ||
-                country.countryId.toLowerCase().includes(searchTerm)
+                country.countryName.toLowerCase().startsWith(searchTerm) ||
+                country.countryId.toLowerCase().startsWith(searchTerm)
             );
             displayCountries(filtered);
         }, 300);

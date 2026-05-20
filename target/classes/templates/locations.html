@@ -64,7 +64,8 @@
 
 <th:block layout:fragment="scripts">
 <script>
-    let currentPage = 0, pageSize = 20, totalPages = 0, allLocations = [], countries = [];
+    let currentPage = 0, pageSize = 10, totalPages = 0, countries = [];
+    let currentSearch = '', currentCountry = '';
     
     async function loadCountries() {
         try {
@@ -88,12 +89,17 @@
             document.getElementById('locationsTable').style.display = 'none';
             document.getElementById('errorMessage').style.display = 'none';
             
-            const data = await API.get(`/locations?page=${page}&size=${pageSize}`);
-            allLocations = data._embedded?.locationses || data._embedded?.locations || [];
+            // Build query parameters
+            let url = `/locations/search?page=${page}&size=${pageSize}`;
+            if (currentSearch) url += `&query=${encodeURIComponent(currentSearch)}`;
+            if (currentCountry) url += `&countryId=${encodeURIComponent(currentCountry)}`;
+            
+            const data = await API.get(url);
+            const locations = data._embedded?.locationses || data._embedded?.locations || [];
             totalPages = data.page?.totalPages || 1;
             currentPage = page;
             
-            displayLocations(allLocations);
+            displayLocations(locations);
             updatePagination();
             
             document.getElementById('loadingSpinner').style.display = 'none';
@@ -130,11 +136,8 @@
                 <td>${location.postalCode || 'N/A'}</td>
                 <td><span class="badge bg-info">${countryName}</span></td>
                 <td class="text-center">
-                    <a href="/location-details?locationId=${location.locationId}" class="btn btn-primary btn-sm me-1">
+                    <a href="/location-details?locationId=${location.locationId}" class="btn btn-primary btn-sm">
                         <i class="bi bi-eye me-1"></i> Details
-                    </a>
-                    <a href="/departments?locationId=${location.locationId}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-diagram-3-fill me-1"></i> Departments
                     </a>
                 </td>
             `;
@@ -171,28 +174,14 @@
     document.getElementById('searchInput').addEventListener('input', function(e) {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
-            const searchTerm = e.target.value.toLowerCase();
-            const filtered = allLocations.filter(loc => 
-                (loc.city && loc.city.toLowerCase().includes(searchTerm)) ||
-                (loc.streetAddress && loc.streetAddress.toLowerCase().includes(searchTerm)) ||
-                (loc.stateProvince && loc.stateProvince.toLowerCase().includes(searchTerm)) ||
-                loc.locationId.toString().includes(searchTerm)
-            );
-            displayLocations(filtered);
+            currentSearch = e.target.value;
+            loadLocations(0); // Reset to page 1
         }, 300);
     });
     
     document.getElementById('countryFilter').addEventListener('change', function(e) {
-        const countryId = e.target.value;
-        if (countryId) {
-            const filtered = allLocations.filter(loc => {
-                const locCountryId = loc.countryId || loc.country?.countryId;
-                return locCountryId === countryId;
-            });
-            displayLocations(filtered);
-        } else {
-            displayLocations(allLocations);
-        }
+        currentCountry = e.target.value;
+        loadLocations(0); // Reset to page 1
     });
     
     if (document.readyState === 'loading') {

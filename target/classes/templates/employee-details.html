@@ -9,7 +9,7 @@
     <div class="row mb-4">
         <div class="col">
             <button id="backButton" class="btn btn-outline-primary" onclick="goBack()">
-                <i class="bi bi-arrow-left me-2"></i><span id="backButtonText">Back</span>
+                <i class="bi bi-arrow-left me-2"></i>Back
             </button>
         </div>
     </div>
@@ -105,10 +105,6 @@
                                 <p class="fw-bold mb-0 text-success" id="salary">-</p>
                             </div>
                             <div class="col-md-4">
-                                <label class="text-muted small mb-1">Commission %</label>
-                                <p class="fw-bold mb-0" id="commission">-</p>
-                            </div>
-                            <div class="col-md-4">
                                 <label class="text-muted small mb-1">Manager</label>
                                 <p class="mb-0" id="managerName">-</p>
                             </div>
@@ -136,87 +132,61 @@
     const returnUrl = urlParams.get('returnUrl');
     let currentEmployee = null;
     
-    // Smart back button function
+    // Smart back button function using session storage to track navigation
     function goBack() {
-        // Priority 1: Use returnUrl parameter if provided
+        const navHistory = JSON.parse(sessionStorage.getItem('navHistory') || '[]');
+        
         if (returnUrl) {
+            sessionStorage.setItem('isBackNavigation', 'true');
             window.location.href = decodeURIComponent(returnUrl);
             return;
         }
         
-        // Priority 2: Check document.referrer to see where we came from
-        const referrer = document.referrer;
-        if (referrer && referrer.includes(window.location.host)) {
-            // Check if we came from region-employees page
-            if (referrer.includes('/region-employees')) {
-                window.location.href = referrer;
-                return;
-            }
-            // Check if we came from a specific page and navigate directly
-            else if (referrer.includes('/job-details')) {
-                const jobIdMatch = referrer.match(/jobId=([^&]+)/);
-                if (jobIdMatch) {
-                    window.location.href = `/job-details?jobId=${jobIdMatch[1]}`;
-                    return;
-                }
-                window.location.href = '/jobs';
-                return;
-            } else if (referrer.includes('/department-details')) {
-                const deptIdMatch = referrer.match(/departmentId=([^&]+)/);
-                if (deptIdMatch) {
-                    window.location.href = `/department-details?departmentId=${deptIdMatch[1]}`;
-                    return;
-                }
-                window.location.href = '/departments';
-                return;
-            } else if (referrer.includes('/job-history')) {
-                window.location.href = `/job-history?employeeId=${employeeId}`;
-                return;
-            } else if (referrer.includes('/employees')) {
-                window.location.href = '/employees';
-                return;
-            } else if (referrer.includes('/jobs')) {
-                window.location.href = '/jobs';
-                return;
-            } else if (referrer.includes('/departments')) {
-                window.location.href = '/departments';
-                return;
+        if (navHistory.length > 1) {
+            navHistory.pop();
+            sessionStorage.setItem('navHistory', JSON.stringify(navHistory));
+            sessionStorage.setItem('isBackNavigation', 'true');
+            const previousPage = navHistory[navHistory.length - 1];
+            window.location.href = previousPage;
+            return;
+        }
+        
+        let defaultPage = '/employees';
+        
+        if (navHistory.length === 1) {
+            const firstPage = navHistory[0];
+            if (firstPage.includes('/department-details')) {
+                defaultPage = '/departments';
+            } else if (firstPage.includes('/job-details')) {
+                defaultPage = '/jobs';
+            } else if (firstPage.includes('/location-details')) {
+                defaultPage = '/locations';
+            } else if (firstPage.includes('/region-employees')) {
+                defaultPage = '/regions';
             }
         }
         
-        // Priority 3: Default to employees list
-        window.location.href = '/employees';
+        sessionStorage.removeItem('navHistory');
+        sessionStorage.removeItem('isBackNavigation');
+        window.location.href = defaultPage;
     }
     
-    // Update back button text based on referrer
-    function updateBackButtonText() {
-        const referrer = document.referrer;
-        const backButtonText = document.getElementById('backButtonText');
+    // Track navigation on page load
+    function trackNavigation() {
+        const currentUrl = window.location.pathname + window.location.search;
+        const navHistory = JSON.parse(sessionStorage.getItem('navHistory') || '[]');
+        const isBackNav = sessionStorage.getItem('isBackNavigation') === 'true';
         
-        if (returnUrl) {
-            if (returnUrl.includes('/jobs')) {
-                backButtonText.textContent = 'Back to Jobs';
-            } else if (returnUrl.includes('/departments')) {
-                backButtonText.textContent = 'Back to Departments';
-            } else if (returnUrl.includes('/job-history')) {
-                backButtonText.textContent = 'Back to Job History';
-            } else if (returnUrl.includes('/region-employees')) {
-                backButtonText.textContent = 'Back to Region';
+        sessionStorage.removeItem('isBackNavigation');
+        
+        if (!isBackNav) {
+            if (navHistory.length === 0 || navHistory[navHistory.length - 1] !== currentUrl) {
+                navHistory.push(currentUrl);
+                if (navHistory.length > 10) {
+                    navHistory.shift();
+                }
+                sessionStorage.setItem('navHistory', JSON.stringify(navHistory));
             }
-        } else if (referrer) {
-            if (referrer.includes('/region-employees')) {
-                backButtonText.textContent = 'Back to Region';
-            } else if (referrer.includes('/job-details')) {
-                backButtonText.textContent = 'Back to Job Details';
-            } else if (referrer.includes('/department-details')) {
-                backButtonText.textContent = 'Back to Department Details';
-            } else if (referrer.includes('/job-history')) {
-                backButtonText.textContent = 'Back to Job History';
-            } else if (referrer.includes('/employees')) {
-                backButtonText.textContent = 'Back to Employees';
-            }
-        } else {
-            backButtonText.textContent = 'Back to Employees';
         }
     }
     
@@ -228,7 +198,6 @@
         }
         
         document.getElementById('empIdDisplay').textContent = employeeId;
-        updateBackButtonText();
         
         try {
             document.getElementById('loadingSpinner').style.display = 'block';
@@ -249,9 +218,7 @@
             
             // Employment Information
             const salary = empData.salary ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(empData.salary) : '-';
-            const commission = empData.commissionPct ? (parseFloat(empData.commissionPct) * 100).toFixed(2) + '%' : '-';
             document.getElementById('salary').textContent = salary;
-            document.getElementById('commission').textContent = commission;
             
             const jobTitle = empData.job?.jobTitle || '-';
             const deptName = empData.department?.departmentName || '-';
@@ -280,9 +247,11 @@
     // Load details on page load
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
+            trackNavigation();
             setTimeout(loadEmployeeDetails, 100);
         });
     } else {
+        trackNavigation();
         setTimeout(loadEmployeeDetails, 100);
     }
 </script>

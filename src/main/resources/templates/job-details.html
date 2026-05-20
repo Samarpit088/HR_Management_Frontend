@@ -9,7 +9,7 @@
   <div class="row mb-4">
     <div class="col">
       <button id="backButton" class="btn btn-outline-primary" onclick="goBack()">
-        <i class="bi bi-arrow-left me-2"></i><span id="backButtonText">Back to Jobs</span>
+        <i class="bi bi-arrow-left me-2"></i>Back
       </button>
     </div>
   </div>
@@ -110,50 +110,46 @@
     const jobId = urlParams.get('jobId');
     const returnUrl = urlParams.get('returnUrl');
 
-    // Smart back button function
+    // Smart back button function using session storage to track navigation
     function goBack() {
-        // Priority 1: Use returnUrl parameter if provided
+        const navHistory = JSON.parse(sessionStorage.getItem('navHistory') || '[]');
+        
         if (returnUrl) {
+            sessionStorage.setItem('isBackNavigation', 'true');
             window.location.href = decodeURIComponent(returnUrl);
             return;
         }
-
-        // Priority 2: Check document.referrer and navigate directly
-        const referrer = document.referrer;
-        if (referrer && referrer.includes(window.location.host)) {
-            if (referrer.includes('/departments')) {
-                window.location.href = '/departments';
-                return;
-            } else if (referrer.includes('/employees')) {
-                window.location.href = '/employees';
-                return;
-            } else if (referrer.includes('/jobs')) {
-                window.location.href = '/jobs';
-                return;
-            }
+        
+        if (navHistory.length > 1) {
+            navHistory.pop();
+            sessionStorage.setItem('navHistory', JSON.stringify(navHistory));
+            sessionStorage.setItem('isBackNavigation', 'true');
+            const previousPage = navHistory[navHistory.length - 1];
+            window.location.href = previousPage;
+            return;
         }
-
-        // Priority 3: Default to jobs list
+        
+        sessionStorage.removeItem('navHistory');
+        sessionStorage.removeItem('isBackNavigation');
         window.location.href = '/jobs';
     }
-
-    // Update back button text based on referrer
-    function updateBackButtonText() {
-        const referrer = document.referrer;
-        const backButtonText = document.getElementById('backButtonText');
-
-        if (returnUrl) {
-            backButtonText.textContent = 'Back';
-        } else if (referrer && referrer.includes(window.location.host)) {
-            if (referrer.includes('/departments')) {
-                backButtonText.textContent = 'Back to Departments';
-            } else if (referrer.includes('/employees')) {
-                backButtonText.textContent = 'Back to Employees';
-            } else {
-                backButtonText.textContent = 'Back';
+    
+    // Track navigation on page load
+    function trackNavigation() {
+        const currentUrl = window.location.pathname + window.location.search;
+        const navHistory = JSON.parse(sessionStorage.getItem('navHistory') || '[]');
+        const isBackNav = sessionStorage.getItem('isBackNavigation') === 'true';
+        
+        sessionStorage.removeItem('isBackNavigation');
+        
+        if (!isBackNav) {
+            if (navHistory.length === 0 || navHistory[navHistory.length - 1] !== currentUrl) {
+                navHistory.push(currentUrl);
+                if (navHistory.length > 10) {
+                    navHistory.shift();
+                }
+                sessionStorage.setItem('navHistory', JSON.stringify(navHistory));
             }
-        } else {
-            backButtonText.textContent = 'Back to Jobs';
         }
     }
 
@@ -165,7 +161,6 @@
         }
 
         document.getElementById('jobIdDisplay').textContent = jobId;
-        updateBackButtonText();
 
         try {
             document.getElementById('loadingSpinner').style.display = 'block';
@@ -186,8 +181,9 @@
                 : '-';
 
             // Fetch employees with this job
-            const employeesData = await API.get(`/employees/search/findByJobJobId?jobId=${encodeURIComponent(jobId)}&size=100`);
-            const employees = employeesData._embedded?.employeeses || employeesData._embedded?.employees || [];
+            // Fetch employees with this job
+            const employeesData = await API.get(`/employees/by-job?jobId=${encodeURIComponent(jobId)}`);
+            const employees = employeesData._embedded?.employees || [];
 
             document.getElementById('employeeCount').textContent = employees.length;
             displayEmployees(employees);
@@ -256,9 +252,11 @@
     // Load details on page load
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
+            trackNavigation();
             setTimeout(loadJobDetails, 100);
         });
     } else {
+        trackNavigation();
         setTimeout(loadJobDetails, 100);
     }
   </script>
