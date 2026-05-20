@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Region Employees</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="card">
+        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <h5 class="mb-1">
+                        <i class="bi bi-globe2 me-2"></i>
+                        <span id="regionNameHeader">Region Employees</span>
+                    </h5>
+                    <small id="employeeCount" class="opacity-75">Loading...</small>
+                </div>
+                <button onclick="goBack()" class="btn btn-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Regions
+                </button>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <!-- Filters Section -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label for="countryFilter" class="form-label fw-bold">
+                        <i class="bi bi-flag-fill me-1"></i> Filter by Country
+                    </label>
+                    <select id="countryFilter" class="form-select">
+                        <option value="">All Countries</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="searchInput" class="form-label fw-bold">
+                        <i class="bi bi-search me-1"></i> Search Employees
+                    </label>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search by name, email, job...">
+                </div>
+            </div>
+            
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 text-muted fw-bold">Loading employees...</p>
+            </div>
+            
+            <!-- Employees Table -->
+            <div id="employeesTable" style="display: none;">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 8%;">
+                                    <i class="bi bi-hash me-1"></i>ID
+                                </th>
+                                <th style="width: 20%;">
+                                    <i class="bi bi-person-fill me-1"></i>Name
+                                </th>
+                                <th style="width: 18%;">
+                                    <i class="bi bi-envelope-fill me-1"></i>Email
+                                </th>
+                                <th style="width: 15%;">
+                                    <i class="bi bi-briefcase-fill me-1"></i>Job
+                                </th>
+                                <th style="width: 15%;">
+                                    <i class="bi bi-building me-1"></i>Department
+                                </th>
+                                <th style="width: 12%;">
+                                    <i class="bi bi-flag-fill me-1"></i>Country
+                                </th>
+                                <th style="width: 12%;" class="text-center">
+                                    <i class="bi bi-gear-fill me-1"></i>Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeesBody">
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center" id="pagination">
+                        <!-- Pagination will be loaded here -->
+                    </ul>
+                </nav>
+            </div>
+            
+            <!-- No Results Message -->
+            <div id="noResults" style="display: none;" class="text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 4em; color: #ccc;"></i>
+                <p class="text-muted mt-3 fs-5">No employees found</p>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="errorMessage" class="alert alert-danger" style="display: none;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span id="errorText"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Page-specific scripts -->
+<th:block layout:fragment="scripts">
+<script>
+    console.log('Region Employees script loaded');
+    
+    let allEmployees = [];
+    let filteredEmployees = [];
+    let displayedEmployees = [];
+    let countries = new Set();
+    let regionId = null;
+    let regionName = '';
+    let currentPage = 0;
+    let pageSize = 20;
+    let totalPages = 0;
+    
+    // Get URL parameters
+    function getUrlParameter(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+    
+    // Initialize page
+    async function initializePage() {
+        regionId = getUrlParameter('regionId');
+        regionName = getUrlParameter('regionName') || 'Region';
+        
+        if (!regionId) {
+            showError('Region ID is missing');
+            return;
+        }
+        
+        // Set page title
+        document.title = `${regionName} - Employees`;
+        document.getElementById('regionNameHeader').textContent = `${regionName} - Employees`;
+        
+        // Load ALL employees at once
+        await loadAllEmployees();
+    }
+    
+    // Load ALL employees in the region (for filtering and pagination)
+    async function loadAllEmployees() {
+        try {
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('employeesTable').style.display = 'none';
+            document.getElementById('noResults').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            console.log('Fetching ALL employees for region:', regionId);
+            
+            // Fetch all employees at once
+            const employeesData = await API.get(`/employees/by-region/${regionId}?page=0&size=500`);
+            
+            const employees = employeesData.employees || [];
+            
+            console.log('Total employees loaded:', employees.length);
+            
+            // Process employees to extract nested data
+            allEmployees = employees.map(emp => {
+                return {
+                    ...emp,
+                    employeeId: emp.employeeId,
+                    firstName: emp.firstName || '',
+                    lastName: emp.lastName || '',
+                    email: emp.email || 'N/A',
+                    jobTitle: emp.job?.jobTitle || 'N/A',
+                    jobId: emp.job?.jobId || 'N/A',
+                    departmentName: emp.department?.departmentName || 'N/A',
+                    departmentId: emp.department?.departmentId || null,
+                    locationCity: emp.department?.location?.city || 'N/A',
+                    countryName: emp.department?.location?.country?.countryName || 'N/A',
+                    countryId: emp.department?.location?.country?.countryId || 'N/A'
+                };
+            });
+            
+            // Extract unique countries
+            countries = new Set(allEmployees.map(emp => emp.countryName).filter(c => c && c !== 'N/A'));
+            console.log('All countries in region:', Array.from(countries));
+            populateCountryFilter();
+            
+            // Initialize filtered employees (no filter applied yet)
+            filteredEmployees = [...allEmployees];
+            
+            // Show first page
+            showPage(0);
+            
+            document.getElementById('loadingSpinner').style.display = 'none';
+            
+        } catch (error) {
+            console.error('Error loading employees:', error);
+            document.getElementById('loadingSpinner').style.display = 'none';
+            showError('Failed to load employees: ' + error.message);
+        }
+    }
+    
+    // Show specific page of filtered employees
+    function showPage(page) {
+        currentPage = page;
+        totalPages = Math.ceil(filteredEmployees.length / pageSize);
+        
+        // Get employees for current page
+        const startIndex = page * pageSize;
+        const endIndex = startIndex + pageSize;
+        displayedEmployees = filteredEmployees.slice(startIndex, endIndex);
+        
+        displayEmployees(displayedEmployees);
+        updatePagination();
+        
+        document.getElementById('employeesTable').style.display = displayedEmployees.length > 0 ? 'block' : 'none';
+        document.getElementById('noResults').style.display = displayedEmployees.length === 0 ? 'block' : 'none';
+        document.getElementById('employeeCount').textContent = 
+            `Showing ${startIndex + 1}-${Math.min(endIndex, filteredEmployees.length)} of ${filteredEmployees.length} employee${filteredEmployees.length !== 1 ? 's' : ''} (Total: ${allEmployees.length})`;
+    }
+    
+    // Populate country filter dropdown
+    function populateCountryFilter() {
+        const select = document.getElementById('countryFilter');
+        select.innerHTML = '<option value="">All Countries</option>';
+        
+        Array.from(countries).sort().forEach(country => {
+            const option = document.createElement('option');
+            option.value = country;
+            option.textContent = country;
+            select.appendChild(option);
+        });
+    }
+    
+    // Display employees
+    function displayEmployees(employees) {
+        const tbody = document.getElementById('employeesBody');
+        tbody.innerHTML = '';
+        
+        if (employees.length === 0) {
+            document.getElementById('employeesTable').style.display = 'none';
+            document.getElementById('noResults').style.display = 'block';
+            return;
+        }
+        
+        document.getElementById('employeesTable').style.display = 'block';
+        document.getElementById('noResults').style.display = 'none';
+        
+        employees.forEach((employee, index) => {
+            const row = document.createElement('tr');
+            row.style.animationDelay = `${index * 0.02}s`;
+            row.classList.add('animate__animated', 'animate__fadeInUp');
+            
+            const fullName = `${employee.firstName || ''} ${employee.lastName || ''}`.trim();
+            const initial = fullName.charAt(0).toUpperCase();
+            
+            row.innerHTML = `
+                <td>
+                    <span class="badge bg-primary">${employee.employeeId}</span>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" 
+                             style="width: 35px; height: 35px; font-weight: bold;">
+                            ${initial}
+                        </div>
+                        <strong>${fullName}</strong>
+                    </div>
+                </td>
+                <td>
+                    <small class="text-muted">${employee.email || 'N/A'}</small>
+                </td>
+                <td>
+                    <span class="badge bg-info text-dark">${employee.jobTitle || 'N/A'}</span>
+                </td>
+                <td>
+                    ${employee.departmentName || 'N/A'}
+                </td>
+                <td>
+                    <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        ${employee.countryName || 'N/A'}
+                    </span>
+                </td>
+                <td class="text-center">
+                    <a href="/employee-details?employeeId=${employee.employeeId}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye-fill me-1"></i> View
+                    </a>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+    
+    // Apply filter and search
+    function applyFilter() {
+        const countryFilter = document.getElementById('countryFilter').value.toLowerCase();
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        
+        filteredEmployees = allEmployees.filter(emp => {
+            const matchesCountry = !countryFilter || (emp.countryName || '').toLowerCase() === countryFilter;
+            const matchesSearch = !searchTerm || 
+                (emp.firstName || '').toLowerCase().startsWith(searchTerm) ||
+                (emp.lastName || '').toLowerCase().startsWith(searchTerm) ||
+                (emp.email || '').toLowerCase().startsWith(searchTerm) ||
+                (emp.jobTitle || '').toLowerCase().startsWith(searchTerm) ||
+                (emp.departmentName || '').toLowerCase().startsWith(searchTerm) ||
+                (emp.countryName || '').toLowerCase().startsWith(searchTerm);
+            
+            return matchesCountry && matchesSearch;
+        });
+        
+        // Reset to page 0 and show filtered results
+        showPage(0);
+    }
+    
+    // Filter employees (called when filter/search changes)
+    function filterEmployees() {
+        applyFilter();
+    }
+    
+    // Show error
+    function showError(message) {
+        document.getElementById('errorMessage').style.display = 'block';
+        document.getElementById('errorText').textContent = message;
+    }
+    
+    // Update pagination
+    function updatePagination() {
+        const pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
+        
+        if (totalPages <= 1) return;
+        
+        // Previous button
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentPage === 0 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `
+            <a class="page-link" href="#" onclick="showPage(${currentPage - 1}); return false;">
+                <i class="bi bi-chevron-left"></i> Previous
+            </a>
+        `;
+        pagination.appendChild(prevLi);
+        
+        // Page numbers (show max 5 pages)
+        const startPage = Math.max(0, currentPage - 2);
+        const endPage = Math.min(totalPages, startPage + 5);
+        
+        for (let i = startPage; i < endPage; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#" onclick="showPage(${i}); return false;">${i + 1}</a>`;
+            pagination.appendChild(li);
+        }
+        
+        // Next button
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentPage >= totalPages - 1 ? 'disabled' : ''}`;
+        nextLi.innerHTML = `
+            <a class="page-link" href="#" onclick="showPage(${currentPage + 1}); return false;">
+                Next <i class="bi bi-chevron-right"></i>
+            </a>
+        `;
+        pagination.appendChild(nextLi);
+    }
+    
+    // Go back to regions using session storage navigation
+    function goBack() {
+        const navHistory = JSON.parse(sessionStorage.getItem('navHistory') || '[]');
+        
+        if (navHistory.length > 1) {
+            navHistory.pop();
+            sessionStorage.setItem('navHistory', JSON.stringify(navHistory));
+            sessionStorage.setItem('isBackNavigation', 'true');
+            const previousPage = navHistory[navHistory.length - 1];
+            window.location.href = previousPage;
+            return;
+        }
+        
+        sessionStorage.removeItem('navHistory');
+        sessionStorage.removeItem('isBackNavigation');
+        window.location.href = '/regions';
+    }
+    
+    // Track navigation on page load
+    function trackNavigation() {
+        const currentUrl = window.location.pathname + window.location.search;
+        const navHistory = JSON.parse(sessionStorage.getItem('navHistory') || '[]');
+        const isBackNav = sessionStorage.getItem('isBackNavigation') === 'true';
+        
+        sessionStorage.removeItem('isBackNavigation');
+        
+        if (!isBackNav) {
+            if (navHistory.length === 0 || navHistory[navHistory.length - 1] !== currentUrl) {
+                navHistory.push(currentUrl);
+                if (navHistory.length > 10) {
+                    navHistory.shift();
+                }
+                sessionStorage.setItem('navHistory', JSON.stringify(navHistory));
+            }
+        }
+    }
+    
+    // Event listeners
+    document.getElementById('countryFilter').addEventListener('change', filterEmployees);
+    
+    let searchTimeout;
+    document.getElementById('searchInput').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(filterEmployees, 300);
+    });
+    
+    // Initialize on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            trackNavigation();
+            initializePage();
+        });
+    } else {
+        trackNavigation();
+        initializePage();
+    }
+</script>
+</th:block>
+
+</body>
+</html>

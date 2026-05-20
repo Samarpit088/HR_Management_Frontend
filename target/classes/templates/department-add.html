@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Add Department</title>
+    <script>
+        // Set page title immediately
+        document.title = 'Add Department - HR Management';
+    </script>
+</head>
+<body>
+<div layout:fragment="content">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <button class="btn btn-outline-primary" onclick="window.location.href='/departments'">
+                <i class="bi bi-arrow-left me-2"></i>Back to Departments
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Card -->
+    <div class="card shadow-sm">
+        <div class="card-header" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+            <h5 class="mb-0">
+                <i class="bi bi-plus-circle-fill me-2"></i>
+                Add New Department
+            </h5>
+        </div>
+        <div class="card-body">
+            <!-- Success Message -->
+            <div id="successMessage" class="alert alert-success animate__animated animate__fadeIn" style="display: none;">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span id="successText"></span>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="errorMessage" class="alert alert-danger animate__animated animate__shakeX" style="display: none;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span id="errorText"></span>
+            </div>
+            
+            <!-- Add Department Form -->
+            <form id="addDepartmentForm">
+                <!-- Department Information Section -->
+                <div class="card mb-4" style="border-left: 5px solid #4facfe;">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="bi bi-diagram-3-fill me-2" style="color: #4facfe;"></i>
+                            Department Information
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="departmentId" class="form-label">Department ID <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="departmentId" required>
+                                <small class="text-muted">Must be unique</small>
+                            </div>
+                            <div class="col-md-8">
+                                <label for="departmentName" class="form-label">Department Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="departmentName" required maxlength="30">
+                                <small class="text-muted">Maximum 30 characters</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Assignment Section -->
+                <div class="card mb-4" style="border-left: 5px solid #00f2fe;">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="bi bi-geo-alt-fill me-2" style="color: #00f2fe;"></i>
+                            Location & Manager
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="locationId" class="form-label">Location</label>
+                                <select class="form-select" id="locationId">
+                                    <option value="">Select a location...</option>
+                                </select>
+                                <small class="text-muted">Department's location</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="managerId" class="form-label">Manager</label>
+                                <select class="form-select" id="managerId">
+                                    <option value="">Select a manager...</option>
+                                </select>
+                                <small class="text-muted">Department manager</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/departments'">
+                        <i class="bi bi-x-circle me-1"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-success" id="submitBtn">
+                        <i class="bi bi-check-circle me-1"></i> Add Department
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Page-specific scripts -->
+<th:block layout:fragment="scripts">
+<script>
+    console.log('Add Department script loaded');
+    
+    let locations = [];
+    let employees = [];
+    
+    // Load locations for dropdown
+    async function loadLocations() {
+        try {
+            const data = await API.get('/locations?size=100');
+            locations = data._embedded?.locationses || data._embedded?.locations || [];
+            
+            const select = document.getElementById('locationId');
+            locations.forEach(loc => {
+                const option = document.createElement('option');
+                option.value = loc.locationId;
+                option.textContent = `${loc.city} (${loc.countryId || 'N/A'})`;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading locations:', error);
+        }
+    }
+    
+    // Load employees for manager dropdown
+    async function loadEmployees() {
+        try {
+            const data = await API.get('/employees?size=500');
+            employees = data._embedded?.employeeses || data._embedded?.employees || [];
+            
+            const select = document.getElementById('managerId');
+            employees.forEach(emp => {
+                const option = document.createElement('option');
+                option.value = emp.employeeId;
+                const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+                option.textContent = `${fullName} (ID: ${emp.employeeId})`;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading employees:', error);
+        }
+    }
+    
+    // Handle form submission
+    document.getElementById('addDepartmentForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Hide messages
+        document.getElementById('successMessage').style.display = 'none';
+        document.getElementById('errorMessage').style.display = 'none';
+        
+        // Disable submit button
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Adding...';
+        
+        try {
+            // Collect form data
+            const departmentData = {
+                departmentId: parseInt(document.getElementById('departmentId').value),
+                departmentName: document.getElementById('departmentName').value
+            };
+            
+            // Add location if selected
+            const locationId = document.getElementById('locationId').value;
+            if (locationId) {
+                departmentData.location = {
+                    locationId: parseInt(locationId)
+                };
+            }
+            
+            // Add manager if selected
+            const managerId = document.getElementById('managerId').value;
+            if (managerId) {
+                departmentData.manager = {
+                    employeeId: parseInt(managerId)
+                };
+            }
+            
+            console.log('Submitting department data:', departmentData);
+            
+            // Submit to backend
+            const response = await fetch('/api/proxy?endpoint=/api/v1/departments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(departmentData)
+            });
+            
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+            
+            // Parse response
+            let result;
+            try {
+                result = await response.json();
+                console.log('Response body:', result);
+            } catch (e) {
+                console.error('Failed to parse response:', e);
+                throw new Error('Invalid response from server');
+            }
+            
+            // Check if response indicates an error (even if status is 200)
+            if (!response.ok || result.success === false || result.error) {
+                let errorMessage = 'Failed to add department';
+                if (result.message) {
+                    errorMessage = result.message;
+                } else if (result.error) {
+                    errorMessage = typeof result.error === 'string' ? result.error : result.error.message || errorMessage;
+                }
+                console.error('Server returned error:', errorMessage);
+                throw new Error(errorMessage);
+            }
+            
+            console.log('Department added successfully:', result);
+            
+            // Show success message
+            document.getElementById('successMessage').style.display = 'block';
+            document.getElementById('successText').textContent = `Department ${departmentData.departmentName} (ID: ${departmentData.departmentId}) added successfully!`;
+            
+            // Reset form
+            document.getElementById('addDepartmentForm').reset();
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Redirect after 2 seconds
+            setTimeout(() => {
+                window.location.href = `/department-details?departmentId=${departmentData.departmentId}`;
+            }, 2000);
+            
+        } catch (error) {
+            console.error('Error adding department:', error);
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorText').textContent = error.message || 'Failed to add department. Please try again.';
+            
+            // Scroll to top to show error
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } finally {
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Add Department';
+        }
+    });
+    
+    // Initialize page
+    async function initializePage() {
+        await Promise.all([loadLocations(), loadEmployees()]);
+    }
+    
+    // Load data on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializePage);
+    } else {
+        initializePage();
+    }
+</script>
+</th:block>
+
+</body>
+</html>

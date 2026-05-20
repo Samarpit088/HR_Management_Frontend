@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Job History</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <!-- Smart Back Button -->
+    <div class="row mb-3">
+        <div class="col">
+            <button id="backButton" class="btn btn-outline-primary" onclick="goBack()">
+                <i class="bi bi-arrow-left me-2"></i>Back
+            </button>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; color: white !important;">
+                    <h5 class="mb-0" style="color: white !important;">
+                        <i class="bi bi-clock-history me-2"></i>
+                        <span id="pageTitle" style="color: white !important;">Employee Job History - Managed by Kartik</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        View complete job history for any employee. Search by Employee ID below.
+                    </p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="employeeIdInput" class="form-label fw-bold">Employee ID</label>
+                            <div class="input-group input-group-lg">
+                                <input type="number" id="employeeIdInput" class="form-control" placeholder="Enter Employee ID (e.g., 100)">
+                                <button class="btn btn-primary" onclick="searchJobHistory()">
+                                    <i class="bi bi-search me-1"></i> Search
+                                </button>
+                            </div>
+                            <small class="text-muted">Enter an employee ID to view their complete job history</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="employeeInfoSection" style="display: none;">
+        <div class="card mb-4">
+            <div class="card-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                <h5 class="mb-0"><i class="bi bi-person-fill me-2"></i>Employee Information</h5>
+            </div>
+            <div class="card-body">
+                <div id="employeeInfoContent"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="currentJobSection" style="display: none;">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-briefcase-fill me-2"></i>Current Job</h5>
+            </div>
+            <div class="card-body">
+                <div id="currentJobContent"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="jobHistorySection" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Job History Timeline</h5>
+            </div>
+            <div class="card-body">
+                <div id="jobHistoryContent"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="loadingSpinner" class="text-center py-5" style="display: none;">
+        <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 text-muted fw-bold">Loading job history...</p>
+    </div>
+    
+    <div id="errorMessage" class="alert alert-danger animate__animated animate__shakeX" style="display: none;">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span id="errorText"></span>
+    </div>
+    
+    <div id="noDataMessage" class="alert alert-info" style="display: none;">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        No job history found for this employee. This could mean the employee has not had any job changes recorded.
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+<script>
+    console.log('Job History script loaded');
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const employeeIdFromUrl = urlParams.get('employeeId');
+    const returnUrl = urlParams.get('returnUrl');
+    
+    function goBack() {
+        const navHistory = JSON.parse(sessionStorage.getItem('navHistory') || '[]');
+        
+        if (returnUrl) {
+            sessionStorage.setItem('isBackNavigation', 'true');
+            window.location.href = decodeURIComponent(returnUrl);
+            return;
+        }
+        
+        if (navHistory.length > 1) {
+            navHistory.pop();
+            sessionStorage.setItem('navHistory', JSON.stringify(navHistory));
+            sessionStorage.setItem('isBackNavigation', 'true');
+            const previousPage = navHistory[navHistory.length - 1];
+            window.location.href = previousPage;
+            return;
+        }
+        
+        sessionStorage.removeItem('navHistory');
+        sessionStorage.removeItem('isBackNavigation');
+        window.location.href = '/employees';
+    }
+    
+    function trackNavigation() {
+        const currentUrl = window.location.pathname + window.location.search;
+        const navHistory = JSON.parse(sessionStorage.getItem('navHistory') || '[]');
+        const isBackNav = sessionStorage.getItem('isBackNavigation') === 'true';
+        
+        sessionStorage.removeItem('isBackNavigation');
+        
+        if (!isBackNav) {
+            if (navHistory.length === 0 || navHistory[navHistory.length - 1] !== currentUrl) {
+                navHistory.push(currentUrl);
+                if (navHistory.length > 10) navHistory.shift();
+                sessionStorage.setItem('navHistory', JSON.stringify(navHistory));
+            }
+        }
+    }
+    
+    if (employeeIdFromUrl) {
+        document.getElementById('employeeIdInput').value = employeeIdFromUrl;
+        trackNavigation();
+        setTimeout(() => searchJobHistory(), 100);
+    } else {
+        trackNavigation();
+    }
+
+    // Helper to reset all result sections
+    function resetSections() {
+        document.getElementById('employeeInfoSection').style.display = 'none';
+        document.getElementById('currentJobSection').style.display = 'none';
+        document.getElementById('jobHistorySection').style.display = 'none';
+        document.getElementById('errorMessage').style.display = 'none';
+        document.getElementById('noDataMessage').style.display = 'none';
+        document.getElementById('loadingSpinner').style.display = 'none';
+    }
+    
+    async function searchJobHistory() {
+        const employeeId = document.getElementById('employeeIdInput').value;
+        
+        if (!employeeId) {
+            alert('Please enter an Employee ID');
+            return;
+        }
+        
+        // Reset all sections and show spinner
+        resetSections();
+        document.getElementById('loadingSpinner').style.display = 'block';
+        
+        try {
+            let currentJobResponse = null;
+            let historyResponse = null;
+            let employeeData = null;
+            let employeeNotFound = false;
+
+            // Fetch employee details first to get the name
+            try {
+                employeeData = await API.get(`/employees/${employeeId}`);
+                if (employeeData && !employeeData.error) {
+                    const fullName = `${employeeData.firstName || ''} ${employeeData.lastName || ''}`.trim();
+                    document.getElementById('pageTitle').textContent = 
+                        `Job History for ${fullName} (ID: ${employeeId})`;
+                    
+                    // Display employee info card
+                    displayEmployeeInfo(employeeData);
+                    document.getElementById('employeeInfoSection').style.display = 'block';
+                }
+            } catch (e) {
+                const msg = (e.message || '').toLowerCase();
+                if (msg.includes('404') || msg.includes('not found')) {
+                    employeeNotFound = true;
+                }
+            }
+
+            // Check current job first — 404 here means invalid employee
+            try {
+                currentJobResponse = await API.get(`/job-history/current/${employeeId}`);
+                
+                // Check if response contains an error field
+                if (currentJobResponse && currentJobResponse.error) {
+                    const msg = currentJobResponse.error.toLowerCase();
+                    if (msg.includes('404') || msg.includes('not found')) {
+                        employeeNotFound = true;
+                    }
+                }
+            } catch (e) {
+                const msg = (e.message || '').toLowerCase();
+                if (msg.includes('404') || msg.includes('not found')) {
+                    employeeNotFound = true;
+                }
+            }
+
+            // If employee not found, stop here — don't show N/A cards
+            if (employeeNotFound) {
+                resetSections();
+                document.getElementById('pageTitle').textContent = 'Employee Job History - Managed by Kartik';
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('errorText').textContent =
+                    `Employee ID ${employeeId} not found. Please check the employee ID and try again.`;
+                return;
+            }
+
+            // Only fetch history if employee exists
+            try {
+                historyResponse = await API.get(`/job-history/employee/${employeeId}`);
+            } catch (e) {
+                // Ignore history errors if employee exists
+            }
+
+            resetSections();
+
+            // Show current job only if we got valid data
+            if (currentJobResponse) {
+                displayCurrentJob(currentJobResponse);
+                document.getElementById('currentJobSection').style.display = 'block';
+            }
+
+            // Show history only if array has items
+            if (historyResponse && historyResponse.length > 0) {
+                displayJobHistory(historyResponse);
+                document.getElementById('jobHistorySection').style.display = 'block';
+            }
+
+            // If nothing to show, display no data message
+            if (!currentJobResponse && (!historyResponse || historyResponse.length === 0)) {
+                document.getElementById('noDataMessage').style.display = 'block';
+            }
+
+        } catch (error) {
+            console.error('Error loading job history:', error);
+            resetSections();
+            document.getElementById('pageTitle').textContent = 'Employee Job History - Managed by Kartik';
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorText').textContent = 'Failed to load job history: ' + error.message;
+        }
+    }
+    
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(amount);
+    }
+    
+    function formatDate(dateString) {
+        if (!dateString || dateString === '9999-12-31') return 'Present';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+    
+    function displayEmployeeInfo(employee) {
+        const content = document.getElementById('employeeInfoContent');
+        const fullName = `${employee.firstName || ''} ${employee.lastName || ''}`.trim();
+        const jobTitle = employee.job?.jobTitle || 'N/A';
+        const departmentName = employee.department?.departmentName || 'N/A';
+        
+        content.innerHTML = `
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="card stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="card-body">
+                            <h6 class="text-white mb-2" style="opacity: 0.9;">Employee Name</h6>
+                            <h5 class="mb-0 text-white">${fullName}</h5>
+                            <small class="text-white" style="opacity: 0.8;">ID: ${employee.employeeId || 'N/A'}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <div class="card-body">
+                            <h6 class="text-white mb-2" style="opacity: 0.9;">Email</h6>
+                            <h5 class="mb-0 text-white" style="font-size: 1rem;">${employee.email || 'N/A'}</h5>
+                            <small class="text-white" style="opacity: 0.8;">Phone: ${employee.phoneNumber || 'N/A'}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                        <div class="card-body">
+                            <h6 class="text-white mb-2" style="opacity: 0.9;">Current Job</h6>
+                            <h5 class="mb-0 text-white" style="font-size: 1rem;">${jobTitle}</h5>
+                            <small class="text-white" style="opacity: 0.8;">${employee.job?.jobId || 'N/A'}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
+                        <div class="card-body">
+                            <h6 class="text-white mb-2" style="opacity: 0.9;">Department</h6>
+                            <h5 class="mb-0 text-white" style="font-size: 1rem;">${departmentName}</h5>
+                            <small class="text-white" style="opacity: 0.8;">Hire Date: ${formatDate(employee.hireDate)}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    function displayCurrentJob(job) {
+        // Don't display if job data is null, undefined, or empty
+        if (!job || Object.keys(job).length === 0) {
+            document.getElementById('currentJobSection').style.display = 'none';
+            return;
+        }
+        
+        const content = document.getElementById('currentJobContent');
+        content.innerHTML = `
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="card stat-card primary">
+                        <div class="card-body">
+                            <h6 class="text-white mb-2" style="opacity: 0.9;">Job Title</h6>
+                            <h5 class="mb-0 text-white">${job.jobTitle || 'N/A'}</h5>
+                            <small class="text-white" style="opacity: 0.8;">${job.jobId || 'N/A'}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card success">
+                        <div class="card-body">
+                            <h6 class="text-white mb-2" style="opacity: 0.9;">Department</h6>
+                            <h5 class="mb-0 text-white">${job.departmentName || 'N/A'}</h5>
+                            <small class="text-white" style="opacity: 0.8;">ID: ${job.departmentId || 'N/A'}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card info">
+                        <div class="card-body">
+                            <h6 class="text-white mb-2" style="opacity: 0.9;">Current Salary</h6>
+                            <h5 class="mb-0 text-white">${formatCurrency(job.currentSalary || 0)}</h5>
+                            <small class="text-white" style="opacity: 0.8;">Annual</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card warning">
+                        <div class="card-body">
+                            <h6 class="text-white mb-2" style="opacity: 0.9;">Start Date</h6>
+                            <h5 class="mb-0 text-white">${formatDate(job.startDate)}</h5>
+                            <small class="text-white" style="opacity: 0.8;">
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle"></i> Currently Working
+                                </span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    function displayJobHistory(history) {
+        // Don't display if history is null, undefined, or empty array
+        if (!history || !Array.isArray(history) || history.length === 0) {
+            document.getElementById('jobHistorySection').style.display = 'none';
+            return;
+        }
+        
+        const content = document.getElementById('jobHistoryContent');
+        history.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+        
+        let html = '<div class="timeline">';
+        
+        history.forEach((job, index) => {
+            const isCurrentJob = job.currentlyWorking || job.endDate === '9999-12-31';
+            const statusBadge = isCurrentJob ? 
+                '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Current</span>' : 
+                '<span class="badge bg-secondary"><i class="bi bi-clock-history"></i> Past</span>';
+            
+            html += `
+                <div class="card mb-3 animate__animated animate__fadeInUp" style="animation-delay: ${index * 0.1}s">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-12">
+                                <h5 class="card-title mb-3">
+                                    ${job.jobTitle || 'N/A'}
+                                    ${statusBadge}
+                                </h5>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="text-muted small mb-1">Job ID</label>
+                                        <p class="fw-bold mb-0">${job.jobId || 'N/A'}</p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="text-muted small mb-1">Department</label>
+                                        <p class="fw-bold mb-0">${job.departmentName || 'N/A'}</p>
+                                        <small class="text-muted">ID: ${job.departmentId || 'N/A'}</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="text-muted small mb-1">Start Date</label>
+                                        <p class="mb-0">${formatDate(job.startDate)}</p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="text-muted small mb-1">End Date</label>
+                                        <p class="mb-0">${formatDate(job.endDate)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        content.innerHTML = html;
+    }
+    
+    document.getElementById('employeeIdInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchJobHistory();
+        }
+    });
+</script>
+
+<style>
+    .timeline {
+        position: relative;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 20px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+    
+    .timeline .card {
+        margin-left: 50px;
+        position: relative;
+    }
+    
+    .timeline .card::before {
+        content: '';
+        position: absolute;
+        left: -38px;
+        top: 20px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #3498db;
+        border: 3px solid white;
+        box-shadow: 0 0 0 2px #3498db;
+    }
+</style>
+</th:block>
+</body>
+</html>

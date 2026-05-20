@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Dashboard</title>
+    <style>
+        .list-group-item:hover {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%) !important;
+            transform: translateX(10px);
+        }
+        
+        .team-member {
+            transition: all 0.3s;
+            padding: 20px;
+            border-radius: 20px;
+            border: 2px solid transparent;
+        }
+        
+        .team-member:hover {
+            transform: translateY(-15px);
+            background: rgba(102, 126, 234, 0.05);
+            border-color: rgba(102, 126, 234, 0.2);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .team-avatar {
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            transition: all 0.4s;
+        }
+        
+        .team-member:hover .team-avatar {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+        
+        .team-member h4 {
+            transition: all 0.3s;
+        }
+        
+        .team-member:hover h4 {
+            color: #667eea !important;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="row mb-4 g-4">
+        <div class="col-md-3">
+            <div class="card stat-card primary animate__animated animate__fadeInUp">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6>Total Employees</h6>
+                            <h2 id="totalEmployees">
+                                <span class="spinner-border spinner-border-sm"></span>
+                            </h2>
+                            <small style="color: rgba(255,255,255,0.8);">Active workforce</small>
+                        </div>
+                        <i class="bi bi-people-fill stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card success animate__animated animate__fadeInUp" style="animation-delay: 0.1s">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6>Departments</h6>
+                            <h2 id="totalDepartments">
+                                <span class="spinner-border spinner-border-sm"></span>
+                            </h2>
+                            <small style="color: rgba(255,255,255,0.8);">Active departments</small>
+                        </div>
+                        <i class="bi bi-diagram-3-fill stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card info animate__animated animate__fadeInUp" style="animation-delay: 0.2s">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6>Job Positions</h6>
+                            <h2 id="totalJobs">
+                                <span class="spinner-border spinner-border-sm"></span>
+                            </h2>
+                            <small style="color: rgba(255,255,255,0.8);">Available roles</small>
+                        </div>
+                        <i class="bi bi-briefcase-fill stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card warning animate__animated animate__fadeInUp" style="animation-delay: 0.3s">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6>Locations</h6>
+                            <h2 id="totalLocations">
+                                <span class="spinner-border spinner-border-sm"></span>
+                            </h2>
+                            <small style="color: rgba(255,255,255,0.8);">Office locations</small>
+                        </div>
+                        <i class="bi bi-geo-alt-fill stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card animate__animated animate__fadeInUp" style="animation-delay: 0.5s">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people-fill me-2" style="color: #667eea;"></i>
+                        Our Team - HR Management System
+                    </h5>
+                    <p class="text-muted mb-0 mt-2">Meet the team behind this comprehensive HR management platform</p>
+                </div>
+                <div class="card-body py-5">
+                    <div class="row g-4 justify-content-center">
+                        <!-- Navya - Employees -->
+                        <div class="col-md-6 col-lg-4">
+                            <a href="/employees" class="text-decoration-none">
+                                <div class="text-center team-member p-4">
+                                    <div class="team-avatar mx-auto mb-4" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); width: 150px; height: 150px; font-size: 4em;">
+                                        <i class="bi bi-people-fill"></i>
+                                    </div>
+                                    <h4 class="mb-2" style="color: #2d3748; font-weight: 700;">Navya</h4>
+                                    <p class="text-muted mb-3" style="font-size: 1.1em;">Employee Directory</p>
+                                    <p class="text-muted small">Manage employee records, personal information, contact details, and maintain the complete employee database.</p>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Samarpit - Jobs -->
+                        <div class="col-md-6 col-lg-4">
+                            <a href="/jobs" class="text-decoration-none">
+                                <div class="text-center team-member p-4">
+                                    <div class="team-avatar mx-auto mb-4" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); width: 150px; height: 150px; font-size: 4em;">
+                                        <i class="bi bi-briefcase-fill"></i>
+                                    </div>
+                                    <h4 class="mb-2" style="color: #2d3748; font-weight: 700;">Samarpit</h4>
+                                    <p class="text-muted mb-3" style="font-size: 1.1em;">Job Position Management</p>
+                                    <p class="text-muted small">Define job roles, set salary ranges, manage job titles, and maintain comprehensive job descriptions.</p>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Nakul - Departments -->
+                        <div class="col-md-6 col-lg-4">
+                            <a href="/departments" class="text-decoration-none">
+                                <div class="text-center team-member p-4">
+                                    <div class="team-avatar mx-auto mb-4" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); width: 150px; height: 150px; font-size: 4em;">
+                                        <i class="bi bi-diagram-3-fill"></i>
+                                    </div>
+                                    <h4 class="mb-2" style="color: #2d3748; font-weight: 700;">Nakul</h4>
+                                    <p class="text-muted mb-3" style="font-size: 1.1em;">Department Management</p>
+                                    <p class="text-muted small">Organize company structure, manage department hierarchies, assign managers, and track departmental information.</p>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Kartik - Job History -->
+                        <div class="col-md-6 col-lg-4">
+                            <a href="/job-history" class="text-decoration-none">
+                                <div class="text-center team-member p-4">
+                                    <div class="team-avatar mx-auto mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 150px; height: 150px; font-size: 4em;">
+                                        <i class="bi bi-clock-history"></i>
+                                    </div>
+                                    <h4 class="mb-2" style="color: #2d3748; font-weight: 700;">Kartik</h4>
+                                    <p class="text-muted mb-3" style="font-size: 1.1em;">Job History Management</p>
+                                    <p class="text-muted small">Track employee career progression, job changes, promotions, and salary history with comprehensive timeline views.</p>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Tanish - Locations -->
+                        <div class="col-md-6 col-lg-4">
+                            <a href="/locations" class="text-decoration-none">
+                                <div class="text-center team-member p-4">
+                                    <div class="team-avatar mx-auto mb-4" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); width: 150px; height: 150px; font-size: 4em;">
+                                        <i class="bi bi-geo-alt-fill"></i>
+                                    </div>
+                                    <h4 class="mb-2" style="color: #2d3748; font-weight: 700;">Tanish</h4>
+                                    <p class="text-muted mb-3" style="font-size: 1.1em;">Location Management</p>
+                                    <p class="text-muted small">Track office locations, addresses, manage facilities, and maintain location-based organizational data.</p>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Rupika - Regions & Countries -->
+                        <div class="col-md-6 col-lg-4">
+                            <a href="/regions" class="text-decoration-none">
+                                <div class="text-center team-member p-4">
+                                    <div class="team-avatar mx-auto mb-4" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); width: 150px; height: 150px; font-size: 4em;">
+                                        <i class="bi bi-globe2"></i>
+                                    </div>
+                                    <h4 class="mb-2" style="color: #2d3748; font-weight: 700;">Rupika</h4>
+                                    <p class="text-muted mb-3" style="font-size: 1.1em;">Regional Management</p>
+                                    <p class="text-muted small">Manage geographical regions, countries, and organize global operations across different territories.</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Page-specific scripts -->
+<th:block layout:fragment="scripts">
+    <script>
+        
+        // Clear navigation history when dashboard loads
+        sessionStorage.removeItem('navHistory');
+        sessionStorage.removeItem('isBackNavigation');
+        
+        async function fetchStats() {
+            console.log('fetchStats() called');
+            try {
+                // Fetch employees count
+                console.log('Fetching employees...');
+                const employeesData = await API.get('/employees?size=1');
+                document.getElementById('totalEmployees').textContent = employeesData.page?.totalElements || 0;
+                
+                // Fetch departments count
+                console.log('Fetching departments...');
+                const deptData = await API.get('/departments?size=1');
+                document.getElementById('totalDepartments').textContent = deptData.page?.totalElements || 0;
+                
+                // Fetch jobs count
+                console.log('Fetching jobs...');
+                const jobsData = await API.get('/jobs?size=1');
+                document.getElementById('totalJobs').textContent = jobsData.page?.totalElements || 0;
+                
+                // Fetch locations count
+                console.log('Fetching locations...');
+                const locData = await API.get('/locations?size=1');
+                document.getElementById('totalLocations').textContent = locData.page?.totalElements || 0;
+                
+                console.log('All stats fetched successfully');
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+                document.getElementById('totalEmployees').textContent = 'N/A';
+                document.getElementById('totalDepartments').textContent = 'N/A';
+                document.getElementById('totalJobs').textContent = 'N/A';
+                document.getElementById('totalLocations').textContent = 'N/A';
+            }
+        }
+        
+        // Wait for DOM and API to be ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('DOM loaded, calling fetchStats');
+                setTimeout(fetchStats, 100);
+            });
+        } else {
+            console.log('DOM already loaded, calling fetchStats');
+            setTimeout(fetchStats, 100);
+        }
+    </script>
+</th:block>
+
+</body>
+</html>

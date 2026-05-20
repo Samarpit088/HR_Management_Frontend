@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Locations</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <h5 class="mb-0">
+                <i class="bi bi-geo-alt-fill me-2" style="color: #667eea;"></i>
+                All Locations - Managed by Tanish
+            </h5>
+            <div class="d-flex gap-2">
+                <select id="countryFilter" class="form-select form-select-sm" style="width: 200px;">
+                    <option value="">All Countries</option>
+                </select>
+                <div class="input-group" style="max-width: 300px;">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search locations...">
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="loadingSpinner" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 text-muted fw-bold">Loading locations...</p>
+            </div>
+            
+            <div id="locationsTable" style="display: none;">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th><i class="bi bi-hash me-1"></i>Location ID</th>
+                                <th><i class="bi bi-signpost me-1"></i>Street Address</th>
+                                <th><i class="bi bi-building me-1"></i>City</th>
+                                <th><i class="bi bi-map me-1"></i>State/Province</th>
+                                <th><i class="bi bi-mailbox me-1"></i>Postal Code</th>
+                                <th><i class="bi bi-flag-fill me-1"></i>Country</th>
+                                <th class="text-center"><i class="bi bi-gear-fill me-1"></i>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="locationsBody"></tbody>
+                    </table>
+                </div>
+                
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center" id="pagination"></ul>
+                </nav>
+            </div>
+            
+            <div id="errorMessage" class="alert alert-danger animate__animated animate__shakeX" style="display: none;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span id="errorText"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+<script>
+    let currentPage = 0, pageSize = 10, totalPages = 0, countries = [];
+    let currentSearch = '', currentCountry = '';
+    
+    async function loadCountries() {
+        try {
+            const data = await API.get('/countries?size=100');
+            countries = data._embedded?.countrieses || data._embedded?.countries || [];
+            const select = document.getElementById('countryFilter');
+            countries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country.countryId;
+                option.textContent = country.countryName;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading countries:', error);
+        }
+    }
+    
+    async function loadLocations(page = 0) {
+        try {
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('locationsTable').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // Build query parameters
+            let url = `/locations/search?page=${page}&size=${pageSize}`;
+            if (currentSearch) url += `&query=${encodeURIComponent(currentSearch)}`;
+            if (currentCountry) url += `&countryId=${encodeURIComponent(currentCountry)}`;
+            
+            const data = await API.get(url);
+            const locations = data._embedded?.locationses || data._embedded?.locations || [];
+            totalPages = data.page?.totalPages || 1;
+            currentPage = page;
+            
+            displayLocations(locations);
+            updatePagination();
+            
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('locationsTable').style.display = 'block';
+        } catch (error) {
+            console.error('Error loading locations:', error);
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorText').textContent = 'Failed to load locations: ' + error.message;
+        }
+    }
+    
+    function displayLocations(locations) {
+        const tbody = document.getElementById('locationsBody');
+        tbody.innerHTML = '';
+        
+        if (locations.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5"><i class="bi bi-inbox" style="font-size: 3em; color: #ccc;"></i><p class="text-muted mt-3">No locations found</p></td></tr>';
+            return;
+        }
+        
+        locations.forEach((location, index) => {
+            // Use flat projection fields first, fallback to nested
+            const countryName = location.countryName || location.country?.countryName || location.countryId || 'N/A';
+            
+            const row = document.createElement('tr');
+            row.style.animationDelay = `${index * 0.05}s`;
+            row.classList.add('animate__animated', 'animate__fadeInUp');
+            row.innerHTML = `
+                <td><span class="badge" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); font-size: 1em; padding: 8px 16px;">${location.locationId}</span></td>
+                <td>${location.streetAddress || 'N/A'}</td>
+                <td><strong>${location.city || 'N/A'}</strong></td>
+                <td>${location.stateProvince || 'N/A'}</td>
+                <td>${location.postalCode || 'N/A'}</td>
+                <td><span class="badge bg-info">${countryName}</span></td>
+                <td class="text-center">
+                    <a href="/location-details?locationId=${location.locationId}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-eye me-1"></i> Details
+                    </a>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+    
+    function updatePagination() {
+        const pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
+        
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentPage === 0 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link" href="#" onclick="loadLocations(${currentPage - 1}); return false;"><i class="bi bi-chevron-left"></i> Previous</a>`;
+        pagination.appendChild(prevLi);
+        
+        const startPage = Math.max(0, currentPage - 2);
+        const endPage = Math.min(totalPages, startPage + 5);
+        
+        for (let i = startPage; i < endPage; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#" onclick="loadLocations(${i}); return false;">${i + 1}</a>`;
+            pagination.appendChild(li);
+        }
+        
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentPage >= totalPages - 1 ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link" href="#" onclick="loadLocations(${currentPage + 1}); return false;">Next <i class="bi bi-chevron-right"></i></a>`;
+        pagination.appendChild(nextLi);
+    }
+    
+    let searchTimeout;
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            currentSearch = e.target.value;
+            loadLocations(0); // Reset to page 1
+        }, 300);
+    });
+    
+    document.getElementById('countryFilter').addEventListener('change', function(e) {
+        currentCountry = e.target.value;
+        loadLocations(0); // Reset to page 1
+    });
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => setTimeout(() => { loadCountries(); loadLocations(); }, 100));
+    } else {
+        setTimeout(() => { loadCountries(); loadLocations(); }, 100);
+    }
+</script>
+</th:block>
+</body>
+</html>

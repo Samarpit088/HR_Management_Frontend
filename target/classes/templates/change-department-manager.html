@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+<head>
+    <title>Change Department Manager</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="card">
+        <div class="card-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-badge me-2"></i>
+                    Change Department Manager
+                </h5>
+                <button onclick="goBack()" class="btn btn-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Departments
+                </button>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <!-- Department Info -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card border-primary">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-2">Department</h6>
+                            <h4 id="departmentName" class="mb-1">Loading...</h4>
+                            <p class="text-muted mb-0">
+                                <small>ID: <span id="departmentId" class="badge bg-primary"></span></small>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Current Manager Info -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card border-info">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-2">
+                                <i class="bi bi-person-circle me-1"></i> Current Manager
+                            </h6>
+                            <div id="currentManagerInfo">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <span class="ms-2">Loading current manager...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Select New Manager -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card border-warning">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-3">
+                                <i class="bi bi-person-plus me-1"></i> Select New Manager
+                            </h6>
+                            
+                            <!-- Search Box -->
+                            <div class="mb-3">
+                                <label for="searchEmployee" class="form-label">Search Employee</label>
+                                <input type="text" id="searchEmployee" class="form-control" placeholder="Search by name, email, or ID...">
+                            </div>
+                            
+                            <!-- Employee List -->
+                            <div id="loadingEmployees" class="text-center py-3">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading employees...</p>
+                            </div>
+                            
+                            <div id="employeeList" style="display: none; max-height: 400px; overflow-y: auto;">
+                                <!-- Employee cards will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="d-flex justify-content-end gap-2">
+                        <button onclick="goBack()" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i> Cancel
+                        </button>
+                        <button id="saveButton" onclick="saveManager()" class="btn btn-warning" disabled>
+                            <i class="bi bi-check-circle me-1"></i> Change Manager
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Success/Error Messages -->
+            <div id="successMessage" class="alert alert-success mt-3" style="display: none;">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span id="successText"></span>
+            </div>
+            
+            <div id="errorMessage" class="alert alert-danger mt-3" style="display: none;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span id="errorText"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Page-specific scripts -->
+<th:block layout:fragment="scripts">
+<script>
+    console.log('Change Department Manager script loaded');
+    
+    let departmentIdValue = null;
+    let departmentNameValue = '';
+    let allEmployees = [];
+    let filteredEmployees = [];
+    let selectedEmployeeId = null;
+    let currentManagerId = null;
+    
+    // Get URL parameters
+    function getUrlParameter(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+    
+    // Initialize page
+    async function initializePage() {
+        departmentIdValue = getUrlParameter('departmentId');
+        departmentNameValue = getUrlParameter('departmentName') || 'Unknown Department';
+        
+        if (!departmentIdValue) {
+            showError('Department ID is missing');
+            return;
+        }
+        
+        document.getElementById('departmentId').textContent = departmentIdValue;
+        document.getElementById('departmentName').textContent = departmentNameValue;
+        
+        await loadDepartmentDetails();
+        await loadEmployees();
+    }
+    
+    // Load department details to get current manager
+    async function loadDepartmentDetails() {
+        try {
+            const deptData = await API.get(`/departments/${departmentIdValue}`);
+            
+            // Display current manager
+            const currentManagerDiv = document.getElementById('currentManagerInfo');
+            
+            if (deptData.managerFirstName || deptData.managerLastName) {
+                const managerName = `${deptData.managerFirstName || ''} ${deptData.managerLastName || ''}`.trim();
+                currentManagerId = deptData.managerId;
+                currentManagerDiv.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-info text-white d-flex align-items-center justify-content-center me-3" 
+                             style="width: 50px; height: 50px; font-weight: bold; font-size: 1.5em;">
+                            ${managerName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <h5 class="mb-0">${managerName}</h5>
+                            <small class="text-muted">Employee ID: ${currentManagerId}</small>
+                        </div>
+                    </div>
+                `;
+            } else {
+                currentManagerDiv.innerHTML = `
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        No manager currently assigned
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading department details:', error);
+            document.getElementById('currentManagerInfo').innerHTML = `
+                <div class="alert alert-danger mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Failed to load current manager information
+                </div>
+            `;
+        }
+    }
+    
+    // Load all employees
+    async function loadEmployees() {
+        try {
+            document.getElementById('loadingEmployees').style.display = 'block';
+            document.getElementById('employeeList').style.display = 'none';
+            
+            const data = await API.get('/employees?size=500');
+            allEmployees = data._embedded?.employeeses || data._embedded?.employees || [];
+            
+            console.log('Loaded employees:', allEmployees.length);
+            
+            filteredEmployees = [...allEmployees];
+            displayEmployees(filteredEmployees);
+            
+            document.getElementById('loadingEmployees').style.display = 'none';
+            document.getElementById('employeeList').style.display = 'block';
+        } catch (error) {
+            console.error('Error loading employees:', error);
+            document.getElementById('loadingEmployees').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Failed to load employees: ${error.message}
+                </div>
+            `;
+        }
+    }
+    
+    // Display employees
+    function displayEmployees(employees) {
+        const container = document.getElementById('employeeList');
+        container.innerHTML = '';
+        
+        if (employees.length === 0) {
+            container.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    No employees found matching your search
+                </div>
+            `;
+            return;
+        }
+        
+        employees.forEach(emp => {
+            const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+            const initial = fullName.charAt(0).toUpperCase();
+            const isCurrentManager = emp.employeeId === currentManagerId;
+            
+            const card = document.createElement('div');
+            card.className = 'card mb-2 employee-card';
+            card.style.cursor = 'pointer';
+            card.style.transition = 'all 0.3s';
+            
+            if (emp.employeeId === selectedEmployeeId) {
+                card.style.borderColor = '#f5576c';
+                card.style.backgroundColor = '#fff5f7';
+            }
+            
+            card.innerHTML = `
+                <div class="card-body py-2">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 40px; height: 40px; font-weight: bold;">
+                                ${initial}
+                            </div>
+                            <div>
+                                <h6 class="mb-0">
+                                    ${fullName}
+                                    ${isCurrentManager ? '<span class="badge bg-info ms-2">Current Manager</span>' : ''}
+                                </h6>
+                                <small class="text-muted">
+                                    ID: ${emp.employeeId} | ${emp.email || 'No email'}
+                                    ${emp.job?.jobTitle ? ` | ${emp.job.jobTitle}` : ''}
+                                </small>
+                            </div>
+                        </div>
+                        <div>
+                            ${emp.employeeId === selectedEmployeeId ? 
+                                '<i class="bi bi-check-circle-fill text-success" style="font-size: 1.5em;"></i>' : 
+                                '<i class="bi bi-circle text-muted"></i>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            card.addEventListener('click', () => selectEmployee(emp.employeeId));
+            card.addEventListener('mouseenter', () => {
+                if (emp.employeeId !== selectedEmployeeId) {
+                    card.style.backgroundColor = '#f8f9fa';
+                }
+            });
+            card.addEventListener('mouseleave', () => {
+                if (emp.employeeId !== selectedEmployeeId) {
+                    card.style.backgroundColor = 'white';
+                }
+            });
+            
+            container.appendChild(card);
+        });
+    }
+    
+    // Select employee
+    function selectEmployee(employeeId) {
+        selectedEmployeeId = employeeId;
+        document.getElementById('saveButton').disabled = false;
+        displayEmployees(filteredEmployees);
+    }
+    
+    // Search employees
+    let searchTimeout;
+    document.getElementById('searchEmployee').addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const searchTerm = e.target.value.toLowerCase();
+            filteredEmployees = allEmployees.filter(emp => {
+                const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.toLowerCase();
+                const email = (emp.email || '').toLowerCase();
+                const empId = emp.employeeId.toString();
+                const jobTitle = (emp.job?.jobTitle || '').toLowerCase();
+                
+                return fullName.startsWith(searchTerm) || 
+                       email.startsWith(searchTerm) || 
+                       empId.startsWith(searchTerm) ||
+                       jobTitle.startsWith(searchTerm);
+            });
+            displayEmployees(filteredEmployees);
+        }, 300);
+    });
+    
+    // Save manager
+    async function saveManager() {
+        if (!selectedEmployeeId) {
+            showError('Please select an employee');
+            return;
+        }
+        
+        if (selectedEmployeeId === currentManagerId) {
+            showError('This employee is already the current manager');
+            return;
+        }
+        
+        try {
+            document.getElementById('saveButton').disabled = true;
+            document.getElementById('saveButton').innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+            
+            // PATCH request to update department manager
+            const url = `/api/proxy?endpoint=${encodeURIComponent(`/api/v1/departments/${departmentIdValue}`)}`;
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    managerId: selectedEmployeeId
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to update manager');
+            }
+            
+            showSuccess('Manager updated successfully! Redirecting...');
+            
+            setTimeout(() => {
+                window.location.href = '/departments';
+            }, 2000);
+        } catch (error) {
+            console.error('Error updating manager:', error);
+            showError('Failed to update manager: ' + error.message);
+            document.getElementById('saveButton').disabled = false;
+            document.getElementById('saveButton').innerHTML = '<i class="bi bi-check-circle me-1"></i> Change Manager';
+        }
+    }
+    
+    // Show success message
+    function showSuccess(message) {
+        document.getElementById('successText').textContent = message;
+        document.getElementById('successMessage').style.display = 'block';
+        document.getElementById('errorMessage').style.display = 'none';
+    }
+    
+    // Show error message
+    function showError(message) {
+        document.getElementById('errorText').textContent = message;
+        document.getElementById('errorMessage').style.display = 'block';
+        document.getElementById('successMessage').style.display = 'none';
+    }
+    
+    // Go back to departments
+    function goBack() {
+        window.location.href = '/departments';
+    }
+    
+    // Initialize on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializePage);
+    } else {
+        initializePage();
+    }
+</script>
+</th:block>
+
+</body>
+</html>
